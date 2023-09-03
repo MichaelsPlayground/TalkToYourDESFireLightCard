@@ -15,17 +15,21 @@ Default file settings:
 
 Legend:
 
-| Data | Description |     F Type     | Size | RW | CAR |  R  |  W  |
-|------|------|:--------------:|:----:|:--:|:---:|:---:|:---:|
-| F Nr | File number in decimal encoding |
-| F Id | ISO File Identifier |
-| F Type | File type as follows: |
-| | Standard = Standard Data file |
-| | Cyclic = Cyclic Record file |
-| | Value = Value file |
-| | Transaction = Transaction MAC file |
-| | FCI/Standard = File Control Information or Standard file |
-| Size | File size (Standard file) or number of records * record size (Cyclic Record file) |
+| Data | Description                                                                        |
+|------|------------------------------------------------------------------------------------|
+| F Nr | File number in decimal encoding                                                    |
+| F Id | ISO File Identifier                                                                |
+| F Type | File type as follows:                                                              |
+| | Standard = Standard Data file                                                      |
+| | Cyclic = Cyclic Record file                                                        |
+| | Value = Value file                                                                 |
+| | Transaction = Transaction MAC file                                                 |
+| | FCI/Standard = File Control Information or Standard file                           |
+| Size | File size (Standard file) or number of records * record size (Cyclic Record file)  |
+| RW | Read & Write Access Rights key                                                     |
+| CAR | Change Access Rights key                                                           |
+| R | Read Access Rights key                                                             |
+| W | Write Access Rights key                                                            |
 
 ## The following data are from another project !
 
