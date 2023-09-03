@@ -21,14 +21,14 @@ on-card logging of transactions.*
 
 This are the available files on a DESFire Light tag with their default file settings:
 
-| F Nr | F Id |     F Type     | Size | RW | CAR |  R  |  W  | Deletable |
-|------|------|:--------------:|:----:|:--:|:---:|:---:|:---:|:---: |
-| 00   | EF00 |    Standard    | 256  | 3 | 0 | 1 | 15 | no |
-| 01   | EF01 |     Cyclic     | 4*16 | 3 | 0 | 1 | 2 | no |
-| 03   | -    |     Value      |  -   | 3 | 0 | 1 | 2 | no |
-| 04   | EF04 |    Standard    | 256  | 3 | 0 | 1 | 2 | no |
-| 15   | -    | TransactionMAC |  12  | 1 | 0 | 1 | 15 | yes |
-| 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | 14 | 15 | no |
+| F Nr | F Id |     F Type     | Size | RW | CAR |  R  |  W  | Deletable | Comm.Mode |
+|------|------|:--------------:|:----:|:--:|:---:|:---:|:---:|:---:|:---:|
+| 00   | EF00 |    Standard    | 256  | 3 | 0 | 1 | 15 | no | Full |
+| 01   | EF01 |     Cyclic     | 4*16 | 3 | 0 | 1 | 2 | no | Full |
+| 03   | -    |     Value      |  -   | 3 | 0 | 1 | 2 | no | Full |
+| 04   | EF04 |    Standard    | 256  | 3 | 0 | 1 | 2 | no | Full |
+| 15   | -    | TransactionMAC |  12  | 1 | 0 | 1 | 15 | yes | Full |
+| 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | 14 | 15 | no | Plain |
 
 Legend:
 

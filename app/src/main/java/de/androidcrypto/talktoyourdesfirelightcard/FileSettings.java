@@ -20,6 +20,8 @@ import java.util.Arrays;
  *
  * I cannot test the analyzed data with a real tag and I'm suspicious with the analyzed values for
  * all of the offset and length values following the SDM Access Rights, so please do not rely on these values !
+ *
+ * Version Sep. 03rd 2023
  */
 
 public class FileSettings {
@@ -40,6 +42,10 @@ public class FileSettings {
     private byte[] valueMax;
     private byte[] valueLimitedCredit;
     private byte valueLimitedCreditAvailable;
+
+    private boolean isLimitedCreditSupportEnabledBit0 = false;
+    private boolean isGetFreeValueAccessEnabledBit1 = false;
+
     // the following variables are available for linear record and cyclic record files only
     private byte[] recordSize; // 3 bytes beware: this data is LSB
     private int recordSizeInt;
@@ -225,6 +231,10 @@ public class FileSettings {
             }
             if (fileType == (byte) 0x02) {
                 // value file
+                // example 02 03 3012 00000000 ffffff7f 6f000000 03
+                //               Acc  Val Min  Val Max  Val CrLi 03:
+                // 03: Bit 0 LimitedCredit support 1 = enabled, 0 = disabled
+                // 03: Bit 1 Free GetValue         1 = enabled, 0 = disabled
                 valueMin = Arrays.copyOfRange(completeResponse, position, position + 4);
                 position += 4;
                 valueMax = Arrays.copyOfRange(completeResponse, position, position + 4);
@@ -232,6 +242,8 @@ public class FileSettings {
                 valueLimitedCredit = Arrays.copyOfRange(completeResponse, position, position + 4);
                 position += 4;
                 valueLimitedCreditAvailable = completeResponse[position];
+                isLimitedCreditSupportEnabledBit0 = testBit(valueLimitedCreditAvailable, 0);
+                isGetFreeValueAccessEnabledBit1 = testBit(valueLimitedCreditAvailable, 1);
                 return;
             }
             if ((fileType == (byte) 0x03) || (fileType == (byte) 0x04)) {
@@ -549,6 +561,8 @@ public class FileSettings {
             sb.append("valueMax: ").append(byteArrayLength4InversedToInt(valueMax)).append("\n");
             sb.append("valueLimitedCredit: ").append(byteArrayLength4InversedToInt(valueLimitedCredit)).append("\n");
             sb.append("valueLimitedCreditAvailable: ").append(byteToHex(valueLimitedCreditAvailable)).append("\n");
+            sb.append("limitedCreditEnabled: ").append(isLimitedCreditSupportEnabledBit0).append("\n");
+            sb.append("get free access to read value: ").append(isGetFreeValueAccessEnabledBit1).append("\n");
         }
         // linear or cyclic record file
         if ((fileType == (byte) 0x03) || (fileType == (byte) 0x04)) {
@@ -715,6 +729,14 @@ public class FileSettings {
 
     public int getFileSizeInt() {
         return fileSizeInt;
+    }
+
+    public boolean isLimitedCreditSupportEnabled() {
+        return isLimitedCreditSupportEnabledBit0;
+    }
+
+    public boolean isGetFreeValueAccessEnabled() {
+        return isGetFreeValueAccessEnabledBit1;
     }
 
     public int getRecordSizeInt() {

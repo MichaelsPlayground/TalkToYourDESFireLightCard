@@ -308,6 +308,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 }
                 selectedApplicationId = DesfireLight.APPLICATION_DF_NAME_DEFAULT.clone();
                 applicationSelected.setText(Utils.bytesToHexNpe(selectedApplicationId));
+                writeToUiAppend(output, "selected application DF Name: " + Utils.bytesToHexNpe(selectedApplicationId));
                 writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " SUCCESS", COLOR_GREEN);
 /*
 
@@ -1584,11 +1585,10 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 byte fileIdByte = DesfireLight.TRANSACTION_MAC_FILE_NUMBER;
                 writeToUiAppend(output, "using a pre defined fileNumber: " + fileIdByte);
                 writeToUiAppend(output, printData("using a predefined TMAC key", TRANSACTION_MAC_KEY_AES));
-                writeToUiAppend(output, "Note: DO NOT authenticate with the Application Master Key first !");
+                writeToUiAppend(output, "Note: DO authenticate with the Application Master Key first !");
 
                 byte[] responseData = new byte[2];
-                // todo implement the TransactionMAC file deletion as Full authentication is needed
-                boolean success = desfireLight.deleteFile(fileIdByte);
+                boolean success = desfireLight.deleteFileMac(fileIdByte);
                 responseData = desfireLight.getErrorCode();
 
                 if (success) {
@@ -1598,7 +1598,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 } else {
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " FAILURE with error " + EV3.getErrorCode(responseData));
                     if (checkAuthenticationError(responseData)) {
-                        writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with a WRITE ACCESS KEY ?");
+                        writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with the APPLICATION MASTER KEY ?");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
                     writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());

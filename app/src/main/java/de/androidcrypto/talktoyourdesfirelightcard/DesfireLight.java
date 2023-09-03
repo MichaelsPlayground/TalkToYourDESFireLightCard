@@ -3765,12 +3765,13 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
             return -1;
         }
         if (!checkIsValueFileType(fileNumber)) return -1;
-        if (fileSettings.getFileType() != FileSettings.VALUE_FILE_TYPE) {
-            log(methodName, "fileType to read is a " + fileSettings.getFileTypeName() + ", aborted");
-            errorCode = RESPONSE_PARAMETER_ERROR.clone();
-            errorCodeReason = "fileType is not Value file";
-            return -1;
+
+        // if the file settings grant a free access to read value this  will override any file communication settings
+        if (fileSettings.isGetFreeValueAccessEnabled()) {
+            log(methodName, "in fileSettings is a free read value access granted, read the value in Plain (overriding the Communication.Mode)");
+            return readFromAValueFileRawPlain(fileNumber);
         }
+
         // the check on authentication depends on the communication mode in file settings:
         byte commMode = fileSettings.getCommunicationSettings();
         boolean isPlainCommunicationMode = false;
@@ -3783,7 +3784,6 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
                 errorCodeReason = "missing legacy authentication";
                 return -1;
             }
-            ;
         } else {
             if (!checkAuthentication()) return -1;
         }
@@ -3968,6 +3968,13 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
         if (!checkIsoDep()) return -1;
 
         // MAC_Input (Ins || CmdCounter || TI || CmdHeader ( = File number) )
+
+        // test data
+        //CmdCounter = 0;
+        //TransactionIdentifier = Utils.hexStringToByteArray("E412166F");
+        //SesAuthMACKey = Utils.hexStringToByteArray("D1CC5CE9FC9F1970348D33D01FAFEF8F");
+
+
         byte[] macInput = getMacInput(GET_VALUE_COMMAND, new byte[]{fileNumber});
         /*
         byte[] commandCounterLsb1 = intTo2ByteArrayInversed(CmdCounter);
@@ -3981,6 +3988,7 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
         byte[] macInput = baosMacInput.toByteArray();
         */
         log(methodName, printData("macInput", macInput));
+        //log(methodName, printData("macInExp", Utils.hexStringToByteArray("6C0000E412166F03")));
 
         // generate the (truncated) MAC (CMAC) with the SesAuthMACKey: MAC = CMAC(KSesAuthMAC, MAC_ Input)
         log(methodName, printData("SesAuthMACKey", SesAuthMACKey));
@@ -3989,6 +3997,7 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
         // now truncate the MAC
         byte[] macTruncated = truncateMAC(macFull);
         log(methodName, printData("macTruncated", macTruncated));
+        //log(methodName, printData("macTruncaExp", Utils.hexStringToByteArray("B775DA280F3E7300")));
 
         // Data (CmdHeader = File number || MAC)
         ByteArrayOutputStream baosGetValueCommand = new ByteArrayOutputStream();
@@ -4004,7 +4013,12 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
         byte[] encryptedData;
         try {
             apdu = wrapMessage(GET_VALUE_COMMAND, getValueCommand);
+            //               00000000300000
+            // AD0100CD73D8E500000000300000
+            // real    906c00000903b775da280f3e730000
+            // example 906C00000903B775DA280F3E730000
             response = sendData(apdu);
+            //log(methodName, Utils.printData("send aExp -->", Utils.hexStringToByteArray("906C00000903B775DA280F3E730000")));
         } catch (IOException e) {
             Log.e(TAG, methodName + " transceive failed, IOException:\n" + e.getMessage());
             log(methodName, "transceive failed: " + e.getMessage(), false);
@@ -5235,7 +5249,7 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
         log(methodName, printData("cmdHeader", cmdHeader));
 
         // MAC_Input (Ins || CmdCounter || TI || CmdHeader )
-        byte[] macInput = getMacInput(READ_RECORD_FILE_COMMAND, cmdHeader);
+        byte[] macInput = getMacInput(READ_RECORD_FILE_SECURE_COMMAND, cmdHeader);
         /*
         byte[] commandCounterLsb1 = intTo2ByteArrayInversed(CmdCounter);
         log(methodName, "CmdCounter: " + CmdCounter);
@@ -5271,7 +5285,7 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
         byte[] fullEncryptedData;
         byte[] encryptedData;
         byte[] responseMACTruncatedReceived;
-        response = sendRequest(READ_RECORD_FILE_COMMAND, readDataCommand);
+        response = sendRequest(READ_RECORD_FILE_SECURE_COMMAND, readDataCommand);
         byte[] responseBytes = returnStatusBytes(response);
         System.arraycopy(responseBytes, 0, errorCode, 0, 2);
         if (checkResponse(response)) {
@@ -5326,7 +5340,7 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
         int fullLength = decryptedData.length;
         int fullRecords = fullLength / recordSize;
         Log.e(TAG, "fullRecords: " + fullRecords);
-        byte[] readData = Arrays.copyOfRange(decryptedData, 0, (fullRecords * recordSize)); // just return the real data
+        byte[] readData = Arrays.copyOfRange(decryptedData, 0, ((fullRecords - 1) * recordSize)); // just return the real data, -1 is for adjusting the padding
         log(methodName, printData("readData", readData));
 
         if (verifyResponseMac(responseMACTruncatedReceived, encryptedData)) {
@@ -6876,6 +6890,80 @@ Executing Cmd.SetConfiguration in CommMode.Full and Option 0x09 for updating the
         byte[] response;
         try {
             apdu = wrapMessage(DELETE_FILE_COMMAND, new byte[]{fileNumber});
+            response = sendData(apdu);
+        } catch (IOException e) {
+            Log.e(TAG, methodName + " transceive failed, IOException:\n" + e.getMessage());
+            log(methodName, "transceive failed: " + e.getMessage());
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = "IOException: transceive failed: " + e.getMessage();
+            return false;
+        }
+        byte[] responseBytes = returnStatusBytes(response);
+        System.arraycopy(responseBytes, 0, errorCode, 0, 2);
+        if (checkResponse(response)) {
+            log(methodName, "SUCCESS");
+            return true;
+        } else {
+            log(methodName, "FAILURE with " + printData("errorCode", errorCode));
+            return false;
+        }
+    }
+
+    // authenticate with Application Master key first !
+    public boolean deleteFileMac(byte fileNumber) {
+        final String methodName = "deleteFileMac";
+        logData = "";
+        log(methodName, "started", true);
+        log(methodName, "fileNumber: " + fileNumber);
+        errorCode = new byte[2];
+        // sanity checks
+        //if (!checkApplicationIdentifier(selectedApplicationId)) return false; // logFile and errorCode are updated
+        // todo check on isApplicationSelected
+        if (!isApplicationSelected) {
+            Log.e(TAG, methodName + " select an application first, aborted");
+            log(methodName, "select an application first, aborted");
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = "select an application first";
+            return false; // logFile and errorCode are updated
+        }
+        /*
+        if (checkAuthentication()) {
+            // as the command won't run in authenticated state the  method denies to work further
+            Log.e(TAG, methodName + " cannot run this command after authentication, aborted");
+            log(methodName, "cannot run this command after authentication, aborted");
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = "cannot run this command after authentication";
+            return false; // logFile and errorCode are updated
+        }*/
+        if (!checkAuthentication()) return false;
+        if (!checkFileNumber(fileNumber)) return false; // logFile and errorCode are updated
+        if (!checkIsoDep()) return false; // logFile and errorCode are updated
+
+        // MAC_Input (Ins || CmdCounter || TI || CmdHeader || CmdData )
+        byte[] macInput = getMacInput(DELETE_FILE_COMMAND, new byte[]{fileNumber});
+
+        log(methodName, printData("macInput", macInput));
+
+        // MAC = CMAC(KSesAuthMAC, MAC_ Input)
+        log(methodName, printData("SesAuthMACKey", SesAuthMACKey));
+        byte[] macFull = calculateDiverseKey(SesAuthMACKey, macInput);
+        log(methodName, printData("macFull", macFull));
+        // now truncate the MAC
+        byte[] macTruncated = truncateMAC(macFull);
+        log(methodName, printData("macTruncated", macTruncated));
+
+        // Constructing the full ReadData Command APDU
+        // Data (FileNo || Offset || DataLength)
+        ByteArrayOutputStream baosDeleteFileCommand = new ByteArrayOutputStream();
+        baosDeleteFileCommand.write(fileNumber);
+        baosDeleteFileCommand.write(macTruncated, 0, macTruncated.length);
+        byte[] deleteFileCommand = baosDeleteFileCommand.toByteArray();
+        log(methodName, printData("deleteFileCommand", deleteFileCommand));
+
+        byte[] apdu;
+        byte[] response;
+        try {
+            apdu = wrapMessage(DELETE_FILE_COMMAND, deleteFileCommand);
             response = sendData(apdu);
         } catch (IOException e) {
             Log.e(TAG, methodName + " transceive failed, IOException:\n" + e.getMessage());
