@@ -31,6 +31,11 @@
         app:showAsAction="never"/>
 
     <item
+        android:id="@+id/action_brute_force_application_id"
+        android:title="guess application id"
+        app:showAsAction="never"/>
+
+    <item
         android:id="@+id/action_export_text_file"
         android:title="Export text File"
         app:showAsAction="never"/>

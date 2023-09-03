@@ -69,6 +69,9 @@
     <string name="header_create_file">he</string>
     <string name="description_create_file">des</string>
     <string name="warning_create_file">wa</string>
+    <string name="header_brute_force_application_id">head</string>
+    <string name="description_brute_force_application_id">desc</string>
+    <string name="warning_brute_force_application_id">war</string>
 
 
 </resources>

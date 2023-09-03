@@ -446,7 +446,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         String outputString = fileList[which] + " ";
                         byte fileIdByte = Byte.parseByte(selectedFileId);
 
-                        boolean suc = desfireLight.selectFileIsoByFileId(fileIdByte);
+                        byte[] isoFileId = Utils.hexStringToByteArray("EF1F"); // fileNumber 31
+                        boolean suc = desfireLight.selectFileIsoByFileId(isoFileId);
                         Log.e(TAG, "selectFileIsoByFileId suc: " + suc);
 
                         selectedFileSettings = finalAllFileSettings[fileIdByte];
@@ -1925,15 +1926,53 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             @Override
             public void onClick(View view) {
                 clearOutputFields();
-                String logString = "Test change Main Application Key to AES DEFAULT";
+                String logString = "Test select application by  isoSelect";
                 writeToUiAppend(output, logString);
 
+                byte[] isoFileId;
+                boolean success;
+
+                isoFileId = Utils.hexStringToByteArray("DF01"); // default app id, working
+                success = desfireLight.selectApplicationIsoByIsoFileIdGuess(isoFileId);
+                Log.d(TAG, "for " + printData("isoFileId",isoFileId) + " : " + success);
+
+                isoFileId = Utils.hexStringToByteArray("3F00"); // picc/mf app id, working
+                success = desfireLight.selectApplicationIsoByIsoFileIdGuess(isoFileId);
+                Log.d(TAG, "for " + printData("isoFileId",isoFileId) + " : " + success);
+
+                isoFileId = Utils.hexStringToByteArray("EF04"); // false
+                success = desfireLight.selectApplicationIsoByIsoFileIdGuess(isoFileId);
+                Log.d(TAG, "for " + printData("isoFileId",isoFileId) + " : " + success);
+
+                isoFileId = Utils.hexStringToByteArray("04DF"); // false
+                success = desfireLight.selectApplicationIsoByIsoFileIdGuess(isoFileId);
+                Log.d(TAG, "for " + printData("isoFileId",isoFileId) + " : " + success);
+
+                /*
+                for (int i = 0; i < 65536; i++) {
+                    // this is testing all available isoFileIds from '0000' to 'FFFF'
+                    // a success should be when isoFileId is 'DF01' = default Application File Id and '3F00' = PICC/MF IsoFileId
+                    int iR = 65535 - i;
+                    isoFileId = Utils.intTo2ByteArrayInversed(iR);
+                    success = desfireLight.selectApplicationIsoByIsoFileIdGuess(isoFileId);
+                    if (success) {
+                        // todo write iR and isoFileId to a file
+                        Log.e(TAG, "iR: " + iR+ " SUCCESS " + printData("isoFileId", isoFileId));
+                        writeToUiAppend(output, "success with i: " + i + printData(" isoFileId", isoFileId));
+                    }
+                    Log.d(TAG, "i: " + i);
+                }
+*/
+
+
+
+/*
                 boolean success;
                 String stepString = "1 select Master Application";
                 success = desfireAuthenticateLegacy.selectApplication(DesfireAuthenticateLegacy.MASTER_APPLICATION_IDENTIFIER);
                 writeToUiAppend(output, stepString + " success ? : " + success);
                 if (!success) return;
-
+*/
                 /*
                 // this is DES to AES
                 stepString = "2 authenticate Master Application with DEFAULT DES key";
@@ -1946,7 +1985,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 writeToUiAppend(output, stepString + " success ? : " + success);
                 if (!success) return;
                 */
-
+/*
                 // this is AES to DES
                 stepString = "2 authenticate Master Application with DEFAULT AES key";
                 byte[] responseData = new byte[2];
@@ -1959,7 +1998,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 //success = desfireLight.changeApplicationKeyToDesFull(Constants.MASTER_APPLICATION_KEY_NUMBER, (byte) 0x00, Constants.MASTER_APPLICATION_KEY_DES_DEFAULT, Constants.MASTER_APPLICATION_KEY_AES_DEFAULT);
                 writeToUiAppend(output, stepString + " success ? : " + success);
                 if (!success) return;
-
+*/
 
             }
 

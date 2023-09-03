@@ -16,6 +16,9 @@
         android:theme="@style/Theme.TalkToYourDESFireCard"
         tools:targetApi="31">
         <activity
+            android:name=".BruteForceApplicationIdActivity"
+            android:exported="false" />
+        <activity
             android:name=".CreateApplicationActivity"
             android:exported="false" />
         <activity

@@ -676,38 +676,136 @@ public class DesfireLight {
         }
     }
 
-    public boolean selectFileIsoByFileId(byte fileId) {
+    public boolean selectApplicationIsoByIsoFileId(byte[] isoFileIdentifier) {
+        String logData = "";
+        final String methodName = "selectApplicationIsoByIsoFileId";
+        log(methodName, "started", true);
+        log(methodName, printData("isoFileIdentifier", isoFileIdentifier));
+
+        if (isoDep == null) {
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = "isoDep is NULL (maybe it is not a NTAG424DNA tag ?), aborted";
+            return false;
+        }
+        if (isoFileIdentifier == null) {
+            errorCode = RESPONSE_PARAMETER_ERROR.clone();
+            errorCodeReason = "isoFileIdentifier is NULL, aborted";
+            return false;
+        }
+        if (isoFileIdentifier.length != 2) {
+            errorCode = RESPONSE_PARAMETER_ERROR.clone();
+            errorCodeReason = "isoFileIdentifier is not of length 2, aborted";
+            return false;
+        }
+        // build command
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write((byte) 0x00);
+        baos.write(SELECT_APPLICATION_ISO_COMMAND);
+        baos.write((byte) 0x00); // select by Select MF, DF or EF, by file identifier
+        baos.write((byte) 0x0C); // return no FCI data
+        //baos.write((byte) 0x00); // return the content of FCI = file id 1F
+        baos.write(isoFileIdentifier.length);
+        baos.write(isoFileIdentifier, 0, isoFileIdentifier.length);
+        baos.write((byte) 0x00); // le
+        byte[] apdu = baos.toByteArray();
+        byte[] response = sendData(apdu);
+        if (checkResponseIso(response)) {
+            log(methodName, methodName + " SUCCESS");
+            errorCode = RESPONSE_OK.clone();
+            errorCodeReason = methodName + " SUCCESS";
+            isApplicationSelected = true;
+            return true;
+        } else {
+            log(methodName, methodName + " FAILURE");
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = methodName + " FAILURE";
+            return false;
+        }
+    }
+
+    // this method is avoiding any checks or printout to be very fast
+    public boolean selectApplicationIsoByIsoFileIdGuess(byte[] isoFileIdentifier) {
+        String logData = "";
+        //final String methodName = "selectApplicationIsoByIsoFileIdGues";
+        //log(methodName, "started", true);
+        //log(methodName, printData("isoFileIdentifier", isoFileIdentifier));
+/*
+        if (isoDep == null) {
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = "isoDep is NULL (maybe it is not a NTAG424DNA tag ?), aborted";
+            return false;
+        }
+        if (isoFileIdentifier == null) {
+            errorCode = RESPONSE_PARAMETER_ERROR.clone();
+            errorCodeReason = "isoFileIdentifier is NULL, aborted";
+            return false;
+        }
+        if (isoFileIdentifier.length != 2) {
+            errorCode = RESPONSE_PARAMETER_ERROR.clone();
+            errorCodeReason = "isoFileIdentifier is not of length 2, aborted";
+            return false;
+        }
+
+ */
+        // build command
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write((byte) 0x00);
+        baos.write(SELECT_APPLICATION_ISO_COMMAND);
+        baos.write((byte) 0x00); // select by Select MF, DF or EF, by file identifier
+        baos.write((byte) 0x0C); // return no FCI data
+        //baos.write((byte) 0x00); // return the content of FCI = file id 1F
+        baos.write(isoFileIdentifier.length);
+        baos.write(isoFileIdentifier, 0, isoFileIdentifier.length);
+        baos.write((byte) 0x00); // le
+        byte[] apdu = baos.toByteArray();
+        byte[] response = sendData(apdu);
+        if (checkResponseIso(response)) {
+            //log(methodName, methodName + " SUCCESS");
+            errorCode = RESPONSE_OK.clone();
+            errorCodeReason = "SUCCESS";
+            isApplicationSelected = true;
+            return true;
+        } else {
+            //log(methodName, methodName + " FAILURE");
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = "FAILURE";
+            return false;
+        }
+    }
+
+    /**
+     * does not work on Value File - there is no isoFileId given
+     * @param isoFileId
+     * @return
+     */
+    public boolean selectFileIsoByFileId(byte[] isoFileId) {
         String logData = "";
         final String methodName = "selectFileIsoByIsoFileId";
         log(methodName, "started", true);
-        //log(methodName, printData("fileId", fileId));
-        log(methodName, "fileId: " + fileId);
+        log(methodName, printData("fileId", isoFileId));
+        //log(methodName, "fileId: " + fileId);
 
         if (isoDep == null) {
             errorCode = RESPONSE_FAILURE.clone();
             errorCodeReason = "isoDep is NULL (maybe it is not a DESFire Light tag ?), aborted";
             return false;
         }
-        /*
+
         if ((isoFileId == null) || (isoFileId.length != 2)) {
             errorCode = RESPONSE_PARAMETER_ERROR.clone();
             errorCodeReason = "isoFileId is NULL or not of length 2, aborted";
             return false;
         }
 
-         */
         // build command
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         baos.write((byte) 0x00);
         baos.write(SELECT_FILE_ISO_COMMAND);
-        baos.write((byte) 0xEF); // select by File ID
-        baos.write((byte) 0x0C); // return no FCI data
+        baos.write((byte) 0x00); // select by File ID
+        baos.write((byte) 0x00); // return no FCI data
         //baos.write((byte) 0x00); // return the content of FCI = file id 1F
-        //baos.write(isoFileId.length);
-        //baos.write(isoFileId, 0, isoFileId.length);
-        baos.write((byte) 0x01);
-        baos.write((byte) fileId);
-
+        baos.write(isoFileId.length);
+        baos.write(isoFileId, 0, isoFileId.length);
         baos.write((byte) 0x00); // le
         byte[] apdu = baos.toByteArray();
         byte[] response = sendData(apdu);
@@ -3570,6 +3668,67 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
             return null;
         }
     }
+
+    // NOT WORKING
+    private byte[] readIsoBinaryFromADataFileRawPlain(byte fileNumber, int offset, int length) {
+        String logData = "";
+        final String methodName = "readFromADataFileRawPlain";
+        log(methodName, "started", true);
+        log(methodName, "fileNumber: " + fileNumber + " offset: " + offset + " size: " + length);
+        // sanity checks
+        if (!checkFileNumber(fileNumber)) return null;
+        if (!checkOffsetMinus(offset)) return null;
+        // getFileSettings for file type and length information
+        FileSettings fileSettings;
+        try {
+            fileSettings = APPLICATION_ALL_FILE_SETTINGS[fileNumber];
+        } catch (NullPointerException e) {
+            Log.e(TAG, methodName + " could not read fileSettings, aborted");
+            log(methodName, "could not read fileSettings, aborted");
+            errorCode = RESPONSE_FAILURE_MISSING_GET_FILE_SETTINGS.clone();
+            errorCodeReason = "could not read fileSettings, aborted";
+            return null;
+        }
+        int fileSize = fileSettings.getFileSizeInt();
+        if (length > fileSize) {
+            Log.e(TAG, methodName + " length is > fileSize, aborted");
+            log(methodName, "length is > fileSize, aborted");
+            errorCode = RESPONSE_PARAMETER_ERROR.clone();
+            errorCodeReason = "length is > fileSize";
+            return null;
+        }
+        if ((offset + length) > fileSize) {
+            Log.e(TAG, methodName + " (offset + length) is > fileSize, aborted");
+            log(methodName, "(offset + length) is > fileSize, aborted");
+            errorCode = RESPONSE_PARAMETER_ERROR.clone();
+            errorCodeReason = "(offset + length) is > fileSize";
+            return null;
+        }
+        //if (!checkIsDataFileType(fileNumber)) return null;
+        if (!checkIsoDep()) return null; // logFile and errorCode are updated
+
+        // generate the parameter
+        byte[] offsetBytes = Utils.intTo3ByteArrayInversed(offset); // LSB order
+        byte[] lengthBytes = Utils.intTo3ByteArrayInversed(length); // LSB order
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write(fileNumber);
+        baos.write(offsetBytes, 0, offsetBytes.length);
+        baos.write(lengthBytes, 0, lengthBytes.length);
+        byte[] commandParameter = baos.toByteArray();
+        byte[] response = sendRequest(READ_DATA_FILE_COMMAND, commandParameter);
+        byte[] responseBytes = returnStatusBytes(response);
+        System.arraycopy(responseBytes, 0, errorCode, 0, 2);
+        if (!checkResponse(response)) {
+            Log.d(TAG, methodName + " FAILURE with error code " + Utils.bytesToHexNpeUpperCase(responseBytes));
+            Log.d(TAG, methodName + " error code: " + EV3.getErrorCode(responseBytes));
+            return null;
+        }
+        errorCode = RESPONSE_OK.clone();
+        errorCodeReason = "SUCCESS";
+        byte[] readData = Arrays.copyOfRange(getData(response), 0, length);
+        return readData;
+    }
+
 
     /**
      * section for Value files
