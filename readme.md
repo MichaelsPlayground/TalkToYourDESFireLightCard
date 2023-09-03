@@ -32,25 +32,25 @@ This are the available files on a DESFire Light tag with their default file sett
 
 Legend:
 
-| Data | Description                                                                              |
-|-----|------------------------------------------------------------------------------------------|
-| F Nr | File number in decimal encoding                                                          |
-| F Id | ISO File Identifier                                                                      |
-| F Type | File type as follows:                                                                    |
-| | Standard = Standard Data file                                                            |
-| | Cyclic = Cyclic Record file                                                              |
-| | Value = Value file                                                                       |
-| | Transaction = Transaction MAC file                                                       |
-| | FCI/Standard = File Control Information or Standard Data file                            |
-| Size | File size (Standard file) or number of records * record size (Cyclic Record file)        |
-| RW | Read & Write Access Rights key                                                           |
-| CAR | Change Access Rights key                                                                 |
-| R | Read Access Rights key                                                                   |
-| W | Write Access Rights key                                                                  |
-| | key number 14 ('Eh') = free access (without any authentication)                          |
-| | key number 15 ('Fh') = never access (no access)                                          |
-| Deletable | only the Transaction MAC file can be deleted a created newly                             |
- | Comm.Mode | Communication mode, can be Plain, MACed or Full enciphered                               |
+| Data | Description  |
+|-----|---------------------------|
+| F Nr | File number in decimal encoding   |
+| F Id | ISO File Identifier  |
+| F Type | File type as follows:   |
+| | Standard = Standard Data file |
+| | Cyclic = Cyclic Record file   |
+| | Value = Value file    |
+| | Transaction = Transaction MAC file  |
+| | FCI/Standard = File Control Information or Standard Data file                           |
+| Size | File size (Standard file) or number of records * record size (Cyclic Record file)       |
+| RW | Read & Write Access Rights key   |
+| CAR | Change Access Rights key   |
+| R | Read Access Rights key    |
+| W | Write Access Rights key   |
+| | key number 14 ('Eh') = free access (without any authentication)  |
+| | key number 15 ('Fh') = never access (no access) |
+| Deletable | only the Transaction MAC file can be deleted and created newly  |
+ | Comm.Mode | Communication mode, can be Plain, MACed or Full enciphered |
  | Notes | *1) a Limited Credit value of 111 is defined and a free access on read value is granted |  
 
 
