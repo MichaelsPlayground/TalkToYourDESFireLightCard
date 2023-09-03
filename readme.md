@@ -1,6 +1,17 @@
-# Talk to your Mifare DESFire EV1/EV2/EV3 card
+# Talk to your Mifare DESFire Light card
 
-This is a sample app to demonstrate how to work with a Mifare DESFire EV1/EV2/EV3 card. 
+This is a sample app to demonstrate how to work with a Mifare DESFire Light card. 
+
+File settings
+
+| Tables        | Are           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |
+
+
+## The following data are from another project !
 
 For simplicity this app uses a DESFire tag with **factory settings** means:
 
