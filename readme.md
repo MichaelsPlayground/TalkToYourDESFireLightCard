@@ -2,17 +2,30 @@
 
 This is a sample app to demonstrate how to work with a Mifare DESFire Light card. 
 
-File settings
+Default file settings:
 
 | F Nr | F Id |     F Type     | Size | RW | CAR |  R  |  W  |
-|------|------|:--------------:|:----:|:---:|:---:|:---:|:---:|
-| 00   | EF00 |    Standard    | 256  | 3 | 0 | 1 |  F  |
-| 01   | EF01 |     Cyclic     | 4*16 |
-| 03   | -    |     Value      |  -   |  
-| 04   | EF04 |    Standard    | 256  | 
-| 15   | -    | TransactionMAC |  12  | 
-| 31   | EF1F |  FCI/Standard  |  32  | 
+|------|------|:--------------:|:----:|:--:|:---:|:---:|:---:|
+| 00   | EF00 |    Standard    | 256  | 3 | 0 | 1 | F |
+| 01   | EF01 |     Cyclic     | 4*16 | 3 | 0 | 1 | F |
+| 03   | -    |     Value      |  -   | 3 | 0 | 1 | 2 |
+| 04   | EF04 |    Standard    | 256  | 3 | 0 | 1 | 2 |
+| 15   | -    | TransactionMAC |  12  | 3 | 0 | 1 | 2 |
+| 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | E | F |
 
+Legend:
+
+| Data | Description |     F Type     | Size | RW | CAR |  R  |  W  |
+|------|------|:--------------:|:----:|:--:|:---:|:---:|:---:|
+| F Nr | File number in decimal encoding |
+| F Id | ISO File Identifier |
+| F Type | File type as follows: |
+| | Standard = Standard Data file |
+| | Cyclic = Cyclic Record file |
+| | Value = Value file |
+| | Transaction = Transaction MAC file |
+| | FCI/Standard = File Control Information or Standard file |
+| Size | File size (Standard file) or number of records * record size (Cyclic Record file) |
 
 ## The following data are from another project !
 
