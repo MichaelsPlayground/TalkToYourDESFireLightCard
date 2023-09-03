@@ -21,35 +21,43 @@ on-card logging of transactions.*
 
 This are the available files on a DESFire Light tag with their default file settings:
 
-| F Nr | F Id |     F Type     | Size | RW | CAR |  R  |  W  | Deletable | Comm.Mode |
-|------|------|:--------------:|:----:|:--:|:---:|:---:|:---:|:---:|:---:|
-| 00   | EF00 |    Standard    | 256  | 3 | 0 | 1 | 15 | no | Full |
-| 01   | EF01 |     Cyclic     | 4*16 | 3 | 0 | 1 | 2 | no | Full |
-| 03   | -    |     Value      |  -   | 3 | 0 | 1 | 2 | no | Full |
-| 04   | EF04 |    Standard    | 256  | 3 | 0 | 1 | 2 | no | Full |
-| 15   | -    | TransactionMAC |  12  | 1 | 0 | 1 | 15 | yes | Full |
-| 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | 14 | 15 | no | Plain |
+| F Nr | F Id |     F Type     | Size | RW | CAR |  R  |  W  | Deletable | Comm.Mode | Notes |
+|------|------|:--------------:|:----:|:--:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 00   | EF00 |    Standard    | 256  | 3 | 0 | 1 | 15 | no | Full | |
+| 01   | EF01 |     Cyclic     | 4*16 | 3 | 0 | 1 | 2 | no | Full | |
+| 03   | -    |     Value      |  -   | 3 | 0 | 1 | 2 | no | Full | *1) |
+| 04   | EF04 |    Standard    | 256  | 3 | 0 | 1 | 2 | no | Full | |
+| 15   | -    | TransactionMAC |  12  | 1 | 0 | 1 | 15 | yes | Full | |
+| 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | 14 | 15 | no | Plain | |
 
 Legend:
 
-| Data | Description                                                                       |
-|-----|-----------------------------------------------------------------------------------|
-| F Nr | File number in decimal encoding                                                   |
-| F Id | ISO File Identifier                                                               |
-| F Type | File type as follows:                                                             |
-| | Standard = Standard Data file                                                     |
-| | Cyclic = Cyclic Record file                                                       |
-| | Value = Value file                                                                |
-| | Transaction = Transaction MAC file                                                |
-| | FCI/Standard = File Control Information or Standard Data file                     |
-| Size | File size (Standard file) or number of records * record size (Cyclic Record file) |
-| RW | Read & Write Access Rights key                                                    |
-| CAR | Change Access Rights key                                                          |
-| R | Read Access Rights key                                                            |
-| W | Write Access Rights key                                                           |
-| | key number 14 ('Eh') = free access (without any authentication)                   |
-| | key number 15 ('Fh') = never access (no access)                               |
-| Deletable | only the Transaction MAC file can be deleted a created newly                      |
+| Data | Description                                                                              |
+|-----|------------------------------------------------------------------------------------------|
+| F Nr | File number in decimal encoding                                                          |
+| F Id | ISO File Identifier                                                                      |
+| F Type | File type as follows:                                                                    |
+| | Standard = Standard Data file                                                            |
+| | Cyclic = Cyclic Record file                                                              |
+| | Value = Value file                                                                       |
+| | Transaction = Transaction MAC file                                                       |
+| | FCI/Standard = File Control Information or Standard Data file                            |
+| Size | File size (Standard file) or number of records * record size (Cyclic Record file)        |
+| RW | Read & Write Access Rights key                                                           |
+| CAR | Change Access Rights key                                                                 |
+| R | Read Access Rights key                                                                   |
+| W | Write Access Rights key                                                                  |
+| | key number 14 ('Eh') = free access (without any authentication)                          |
+| | key number 15 ('Fh') = never access (no access)                                          |
+| Deletable | only the Transaction MAC file can be deleted a created newly                             |
+ | Comm.Mode | Communication mode, can be Plain, MACed or Full enciphered                               |
+ | Notes | *1) a Limited Credit value of 111 is defined and a free access on read value is granted |  
+
+
+
+
+
+
 
 ## The following data are from another project !
 
