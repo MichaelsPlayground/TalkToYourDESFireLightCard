@@ -1,7 +1,7 @@
-package de.androidcrypto.talktoyourdesfirecard;
+package de.androidcrypto.talktoyourdesfirelightcard;
 
-import static de.androidcrypto.talktoyourdesfirecard.Utils.setBitInByte;
-import static de.androidcrypto.talktoyourdesfirecard.Utils.unsetBitInByte;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.setBitInByte;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.unsetBitInByte;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;

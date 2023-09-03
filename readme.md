@@ -23,6 +23,8 @@ Data sheet – MIFARE DESFire Light: https://www.nxp.com/docs/en/data-sheet/MF2D
 
 Application note – AN12343 MIFARE DESFire Light Features and Hints: https://www.nxp.com/docs/en/application-note/AN12343.pdf
 
+Application note – AN12344 MIFARE DESFire Light Target Applications and Usage: https://www.nxp.com/docs/en/application-note/AN12344.pdf
+
 Leakage Resilient Primitive (LRP) Specification: https://www.nxp.com/docs/en/application-note/AN12304.pdf (test vectors)
 
 Symmetric key diversification's: https://www.nxp.com/docs/en/application-note/AN10922.pdf

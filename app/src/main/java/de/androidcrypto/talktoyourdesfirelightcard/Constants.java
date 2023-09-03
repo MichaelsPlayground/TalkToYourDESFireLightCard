@@ -1,6 +1,6 @@
-package de.androidcrypto.talktoyourdesfirecard;
+package de.androidcrypto.talktoyourdesfirelightcard;
 
-import static de.androidcrypto.talktoyourdesfirecard.Utils.hexStringToByteArray;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.hexStringToByteArray;
 
 /**
  * This class holds all the constants used in the Test Environment

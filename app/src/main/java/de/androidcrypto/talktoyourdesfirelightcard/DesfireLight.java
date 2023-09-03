@@ -1,11 +1,11 @@
-package de.androidcrypto.talktoyourdesfirecard;
+package de.androidcrypto.talktoyourdesfirelightcard;
 
-import static de.androidcrypto.talktoyourdesfirecard.Utils.byteArrayLength4InversedToInt;
-import static de.androidcrypto.talktoyourdesfirecard.Utils.hexStringToByteArray;
-import static de.androidcrypto.talktoyourdesfirecard.Utils.intFrom4ByteArrayInversed;
-import static de.androidcrypto.talktoyourdesfirecard.Utils.intTo2ByteArrayInversed;
-import static de.androidcrypto.talktoyourdesfirecard.Utils.intTo3ByteArrayInversed;
-import static de.androidcrypto.talktoyourdesfirecard.Utils.intTo4ByteArrayInversed;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.byteArrayLength4InversedToInt;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.hexStringToByteArray;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.intFrom4ByteArrayInversed;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.intTo2ByteArrayInversed;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.intTo3ByteArrayInversed;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.intTo4ByteArrayInversed;
 
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -28,12 +28,12 @@ import java.util.List;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import de.androidcrypto.talktoyourdesfirecard.nfcjlib.AES;
-import de.androidcrypto.talktoyourdesfirecard.nfcjlib.CRC32;
+import de.androidcrypto.talktoyourdesfirelightcard.nfcjlib.AES;
+import de.androidcrypto.talktoyourdesfirelightcard.nfcjlib.CRC32;
 
 
 /**
- * This class is the full library that connects to Mifare DESFire EV1/EV2/EV3 tags for these commands:
+ * This class is the full library that connects to Mifare DESFire Light tags for these commands:
  * - create (*1), select and delete (*2) an AES key based application
  * - authenticate with AES keys using 'authenticateEV2First' and 'authenticateEV2NonFirst'
  * - create and delete (*2) a Data file (Standard or Backup file) with communication mode Plain, MACed or Full enciphered
@@ -92,9 +92,9 @@ import de.androidcrypto.talktoyourdesfirecard.nfcjlib.CRC32;
 
 // todo do not run some tasks after authentication (e.g. deleteFile won't run as the PICC is in authenticated state)
 
-public class DesfireEv3 {
+public class DesfireLight {
 
-    private static final String TAG = DesfireEv3.class.getName();
+    private static final String TAG = DesfireLight.class.getName();
 
 
     private final IsoDep isoDep;
@@ -155,8 +155,10 @@ public class DesfireEv3 {
     private final byte GET_VERSION_INFO_COMMAND = (byte) 0x60;
     private final byte CREATE_APPLICATION_COMMAND = (byte) 0xCA;
     private final byte SELECT_APPLICATION_COMMAND = (byte) 0x5A;
+    private final byte SELECT_APPLICATION_ISO_COMMAND = (byte) 0xA4;
     private final byte DELETE_APPLICATION_COMMAND = (byte) 0xDA;
     private final byte GET_APPLICATION_IDS_COMMAND = (byte) 0x6A;
+    private final byte SELECT_FILE_ISO_COMMAND = (byte) 0xA4;
     private final byte CREATE_STANDARD_FILE_COMMAND = (byte) 0xCD;
     private final byte WRITE_STANDARD_FILE_COMMAND = (byte) 0x3D;
     private final byte READ_STANDARD_FILE_COMMAND = (byte) 0xBD;
@@ -201,6 +203,7 @@ public class DesfireEv3 {
     private final byte FORMAT_PICC_COMMAND = (byte) 0xFC;
     private final byte DELETE_FILE_COMMAND = (byte) 0xDF;
     private final byte GET_FILE_IDS_COMMAND = (byte) 0x6F;
+    private final byte GET_FILE_IDS_ISO_COMMAND = (byte) 0x61;
     private final byte GET_FILE_SETTINGS_COMMAND = (byte) 0xF5;
     private final byte CHANGE_KEY_SECURE_COMMAND = (byte) 0xC4;
     private static final byte CHANGE_FILE_SETTINGS_COMMAND = (byte) 0x5F;
@@ -209,7 +212,14 @@ public class DesfireEv3 {
      * class internal constants and limitations
      */
     boolean printToLog = true; // logging data in internal log string
-    public static final byte[] MASTER_APPLICATION_IDENTIFIER = Utils.hexStringToByteArray("000000"); // AID '00 00 00'
+
+    // for selecting the PICC level, e.g. to run the readSignature command
+    public static final byte[] MASTER_APPLICATION_ISO_DF_NAME = Utils.hexStringToByteArray("D2760000850100");
+    public static final byte[] MASTER_APPLICATION_ISO_FILE_ID = Utils.hexStringToByteArray("3F00");
+
+    public static final byte[] APPLICATION_DF_NAME_DEFAULT = Utils.hexStringToByteArray("A00000039656434103F015400000000B"); // DESFire Light: only one application is  available
+    public static final byte[] APPLICATION_ISO_FILE_ID_DEFAULT = Utils.hexStringToByteArray("DF01");
+
     private final byte APPLICATION_MASTER_KEY_SETTINGS = (byte) 0x0F; // 'amks' all default values
     private final byte APPLICATION_CRYPTO_DES = 0x00; // add this to number of keys for DES
     //private final byte APPLICATION_CRYPTO_3KTDES = (byte) 0x40; // add this to number of keys for 3KTDES
@@ -251,12 +261,14 @@ public class DesfireEv3 {
      */
 
     private byte[] selectedApplicationId; // filled by 'select application'
+    private boolean isApplicationSelected = false; // a DESFire Light contains one application only
 
     /**
      * files
      */
 
     private static byte[] APPLICATION_ALL_FILE_IDS; // filled by getAllFileIds and invalidated by selectApplication AND createFile
+    private static byte[] APPLICATION_ALL_FILE_IDS_ISO; // filled by getAllFileIdsIso
     private static FileSettings[] APPLICATION_ALL_FILE_SETTINGS; // filled by getAllFileSettings and invalidated by selectApplication AND createFile
     private FileSettings selectedFileSetting; // takes the fileSettings of the actual file
     private FileSettings[] fileSettingsArray = new FileSettings[MAXIMUM_NUMBER_OF_FILES]; // after an 'select application' the fileSettings of all files are read
@@ -273,7 +285,7 @@ public class DesfireEv3 {
     }
 
 
-    public DesfireEv3(IsoDep isoDep) {
+    public DesfireLight(IsoDep isoDep) {
         this.isoDep = isoDep;
         Log.i(TAG, "class is initialized");
         transactionMacReaderId = TRANSACTION_MAC_READER_ID_DEFAULT.clone();
@@ -358,12 +370,14 @@ public class DesfireEv3 {
         // sanity checks
         if (!checkApplicationIdentifier(applicationIdentifier))
             return false; // logFile and errorCode are updated
+        /*
         if (Arrays.equals(applicationIdentifier, MASTER_APPLICATION_IDENTIFIER)) {
             log(methodName, "application identifier is 000000, aborted");
             errorCode = RESPONSE_PARAMETER_ERROR.clone();
             errorCodeReason = "application identifier is 000000";
             return false;
         }
+        */
         if ((numberOfApplicationKeys < 1) || (numberOfApplicationKeys > 14)) {
             log(methodName, "numberOfApplicationKeys is not in range 1..14, aborted");
             errorCode = RESPONSE_PARAMETER_ERROR.clone();
@@ -433,12 +447,15 @@ public class DesfireEv3 {
         // sanity checks
         if (!checkApplicationIdentifier(applicationIdentifier))
             return false; // logFile and errorCode are updated
+        /*
         if (Arrays.equals(applicationIdentifier, MASTER_APPLICATION_IDENTIFIER)) {
             log(methodName, "application identifier is 000000, aborted");
             errorCode = RESPONSE_PARAMETER_ERROR.clone();
             errorCodeReason = "application identifier is 000000";
             return false;
         }
+
+         */
         if ((numberOfApplicationKeys < 1) || (numberOfApplicationKeys > 14)) {
             log(methodName, "numberOfApplicationKeys is not in range 1..14, aborted");
             errorCode = RESPONSE_PARAMETER_ERROR.clone();
@@ -610,6 +627,105 @@ public class DesfireEv3 {
     }
 
     /**
+     * selects an application on the discovered tag by application name (ISO command)
+     *
+     * @param dfApplicationName
+     * @return Note: The DESFire Light has ONE pre defined application with name "D2760000850101"
+     * see //NTAG 424 DNA and NTAG 424 DNA TagTamper features and hints AN12196.pdf pages 25-26
+     */
+
+    public boolean selectApplicationIsoByDfName(byte[] dfApplicationName) {
+        String logData = "";
+        final String methodName = "selectApplicationByIsoByDfName";
+        log(methodName, "started", true);
+        log(methodName, printData("dfApplicationName", dfApplicationName));
+
+        if (isoDep == null) {
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = "isoDep is NULL (maybe it is not a NTAG424DNA tag ?), aborted";
+            return false;
+        }
+        if (dfApplicationName == null) {
+            errorCode = RESPONSE_PARAMETER_ERROR.clone();
+            errorCodeReason = "dfApplicationName is NULL, aborted";
+            return false;
+        }
+        // build command
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write((byte) 0x00);
+        baos.write(SELECT_APPLICATION_ISO_COMMAND);
+        baos.write((byte) 0x04); // select by DF name
+        baos.write((byte) 0x0C); // return no FCI data
+        //baos.write((byte) 0x00); // return the content of FCI = file id 1F
+        baos.write(dfApplicationName.length);
+        baos.write(dfApplicationName, 0, dfApplicationName.length);
+        baos.write((byte) 0x00); // le
+        byte[] apdu = baos.toByteArray();
+        byte[] response = sendData(apdu);
+        if (checkResponseIso(response)) {
+            log(methodName, methodName + " SUCCESS");
+            errorCode = RESPONSE_OK.clone();
+            errorCodeReason = methodName + " SUCCESS";
+            isApplicationSelected = true;
+            return true;
+        } else {
+            log(methodName, methodName + " FAILURE");
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = methodName + " FAILURE";
+            return false;
+        }
+    }
+
+    public boolean selectFileIsoByFileId(byte fileId) {
+        String logData = "";
+        final String methodName = "selectFileIsoByIsoFileId";
+        log(methodName, "started", true);
+        //log(methodName, printData("fileId", fileId));
+        log(methodName, "fileId: " + fileId);
+
+        if (isoDep == null) {
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = "isoDep is NULL (maybe it is not a DESFire Light tag ?), aborted";
+            return false;
+        }
+        /*
+        if ((isoFileId == null) || (isoFileId.length != 2)) {
+            errorCode = RESPONSE_PARAMETER_ERROR.clone();
+            errorCodeReason = "isoFileId is NULL or not of length 2, aborted";
+            return false;
+        }
+
+         */
+        // build command
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        baos.write((byte) 0x00);
+        baos.write(SELECT_FILE_ISO_COMMAND);
+        baos.write((byte) 0xEF); // select by File ID
+        baos.write((byte) 0x0C); // return no FCI data
+        //baos.write((byte) 0x00); // return the content of FCI = file id 1F
+        //baos.write(isoFileId.length);
+        //baos.write(isoFileId, 0, isoFileId.length);
+        baos.write((byte) 0x01);
+        baos.write((byte) fileId);
+
+        baos.write((byte) 0x00); // le
+        byte[] apdu = baos.toByteArray();
+        byte[] response = sendData(apdu);
+        if (checkResponseIso(response)) {
+            log(methodName, methodName + " SUCCESS");
+            errorCode = RESPONSE_OK.clone();
+            errorCodeReason = methodName + " SUCCESS";
+            isApplicationSelected = true;
+            return true;
+        } else {
+            log(methodName, methodName + " FAILURE");
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = methodName + " FAILURE";
+            return false;
+        }
+    }
+
+    /**
      * deletes the selected application without any further confirmation
      * Note: this command requires a preceding authentication with Application Master key
      *
@@ -676,9 +792,35 @@ public class DesfireEv3 {
         byte[] applicationListBytes = getData(response);
         applicationIdList = divideArray(applicationListBytes, 3);
         return applicationIdList;
-    }
+    };
 
-    ;
+    public List<byte[]> getFileIdsIsoList() {
+        final String methodName = "getFileIdsIsoList";
+        logData = "";
+        log(methodName, "started", true);
+        errorCode = new byte[2];
+
+        // sanity checks
+        //if (!checkIsMasterApplication()) return null; // select Master Application first
+        if (!checkIsoDep()) return null;
+
+        // get file ids
+        List<byte[]> fileIdList = new ArrayList<>();
+        byte[] response;
+        response = sendRequest(GET_FILE_IDS_ISO_COMMAND);
+        byte[] responseBytes = returnStatusBytes(response);
+        System.arraycopy(responseBytes, 0, errorCode, 0, 2);
+        if (!checkResponse(response)) {
+            Log.d(TAG, methodName + " FAILURE with error code " + Utils.bytesToHexNpeUpperCase(responseBytes));
+            Log.d(TAG, methodName + " error code: " + EV3.getErrorCode(responseBytes));
+            return null;
+        }
+        errorCode = RESPONSE_OK.clone();
+        errorCodeReason = "SUCCESS";
+        byte[] fileListBytes = getData(response);
+        fileIdList = divideArray(fileListBytes, 2);
+        return fileIdList;
+    }
 
 
     /**
@@ -6588,7 +6730,7 @@ Executing Cmd.SetConfiguration in CommMode.Full and Option 0x09 for updating the
 
     /**
      * get the file numbers of all files within an application
-     * Note: depending on the application master key settings this requires an preceding authentication
+     * Note: depending on the application master key settings this requires a preceding authentication
      * with the application master key
      *
      * @return an array of bytes with all available fileIds
@@ -6599,7 +6741,9 @@ Executing Cmd.SetConfiguration in CommMode.Full and Option 0x09 for updating the
         log(methodName, "started", true);
         errorCode = new byte[2];
         // sanity checks
-        if (!checkApplicationIdentifier(selectedApplicationId)) return null;
+
+        // todo sanity check on ísSelectedApplication
+        //if (!checkApplicationIdentifier(selectedApplicationId)) return null;
         if (!checkIsoDep()) return null;
         byte[] apdu;
         byte[] response;
@@ -6630,6 +6774,51 @@ Executing Cmd.SetConfiguration in CommMode.Full and Option 0x09 for updating the
     }
 
     /**
+     * get the file numbers of all files within an application
+     * Note: depending on the application master key settings this requires a preceding authentication
+     * with the application master key
+     *
+     * @return an array of bytes with all available fileIds, on a DESFire Light it is 8 bytes:
+     * List of n ISO File IDs of the 3 StandardData files and the CyclicRecord file, 2 bytes per file
+     */
+    public byte[] getAllFileIdsIso() {
+        final String methodName = "getAllFileIDsIso";
+        logData = "";
+        log(methodName, "started", true);
+        errorCode = new byte[2];
+        // sanity checks
+        // todo sanity check on selected application ?
+        //if (!checkApplicationIdentifier(selectedApplicationId)) return null;
+        if (!checkIsoDep()) return null;
+        byte[] apdu;
+        byte[] response;
+        try {
+            apdu = wrapMessage(GET_FILE_IDS_ISO_COMMAND, null);
+            response = sendData(apdu);
+        } catch (Exception e) {
+            Log.e(TAG, methodName + " transceive failed, IOException:\n" + e.getMessage());
+            log(methodName, "transceive failed: " + e.getMessage(), false);
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = "IOException: transceive failed: " + e.getMessage();
+            return null;
+        }
+        System.arraycopy(returnStatusBytes(response), 0, errorCode, 0, 2);
+        byte[] responseData = Arrays.copyOfRange(response, 0, response.length - 2);
+        if (checkResponse(response)) {
+            Log.d(TAG, "response SUCCESS");
+            errorCode = RESPONSE_OK.clone();
+            errorCodeReason = "SUCCESS";
+            APPLICATION_ALL_FILE_IDS_ISO = responseData.clone();
+            return responseData;
+        } else {
+            Log.d(TAG, "response FAILURE");
+            //System.arraycopy(RESPONSE_FAILURE, 0, errorCode, 0, RESPONSE_FAILURE.length);
+            errorCodeReason = "response FAILURE";
+            return null;
+        }
+    }
+
+    /**
      * get the file settings of all files within an application
      * Note: depending on the application master key settings this requires an preceding authentication
      * with the application master key
@@ -6642,7 +6831,8 @@ Executing Cmd.SetConfiguration in CommMode.Full and Option 0x09 for updating the
         log(methodName, "started", true);
         errorCode = new byte[2];
         // sanity checks
-        if (!checkApplicationIdentifier(selectedApplicationId)) return null;
+        // todo sanity check on isSelectedApplication
+        //if (!checkApplicationIdentifier(selectedApplicationId)) return null;
         if (APPLICATION_ALL_FILE_IDS == null) {
             Log.e(TAG, methodName + " select an application first, aborted");
             errorCode = RESPONSE_FAILURE.clone();
@@ -8973,6 +9163,20 @@ fileSize: 128
     }
 
     /**
+     * checks that the tapped tag is of type DESFire Light
+     * @return true on success
+     */
+    public boolean checkForDESFireLight() {
+        VersionInfo versionInfo = getVersionInformation();
+        if (versionInfo == null) return false;
+        Log.d(TAG, versionInfo.dump());
+        int hardwareType = versionInfo.getHardwareType(); // 1 = DESFire, 4 = NTAG family 4xx, 8 = DESFire Light
+        int hardwareVersion = versionInfo.getHardwareVersionMajor(); // 51 = DESFire EV3, 48 = NTAG 424 DNA
+        return ((hardwareType == 8) && (hardwareVersion == 48));
+    }
+
+
+    /**
      * checks that the tapped tag is of type DESFire EV1
      * As some commands do work on a DESFire EV1 tag only we need to check for that tag type
      *
@@ -9025,13 +9229,15 @@ fileSize: 128
         final String methodName = "formatPicc";
         log(methodName, methodName);
 
+        // NOT AVAILABLE ON DESFire Light
+
         if ((isoDep == null) || (!isoDep.isConnected())) {
             log(methodName,"no or lost connection to the card, aborted");
             Log.e(TAG, methodName + " no or lost connection to the card, aborted");
             System.arraycopy(RESPONSE_FAILURE, 0, errorCode, 0, 2);
             return false;
         }
-
+/*
         // the first step is to select the Master Application
         boolean success = selectApplicationByAid(MASTER_APPLICATION_IDENTIFIER);
         if (!success) {
@@ -9068,6 +9274,9 @@ fileSize: 128
             System.arraycopy(RESPONSE_FAILURE, 0, errorCode, 0, 2);
             return false;
         }
+
+ */
+        return false;
     }
 
     /**
@@ -9265,6 +9474,10 @@ fileSize: 128
      */
 
     private boolean checkIsMasterApplication() {
+
+        // NOT AVAILABLE ON DESFire Light
+        return false;
+        /*
         if (!Arrays.equals(selectedApplicationId, MASTER_APPLICATION_IDENTIFIER)) {
             log("checkIsMasterApplication", "selectedApplicationId is not Master Application Identifier, aborted");
             errorCode = RESPONSE_FAILURE.clone();
@@ -9272,6 +9485,8 @@ fileSize: 128
             return false;
         }
         return true;
+
+         */
     }
 
     private boolean checkApplicationIdentifier(byte[] applicationIdentifier) {
@@ -9763,6 +9978,10 @@ fileSize: 128
 
     public static byte[] getApplicationAllFileIds() {
         return APPLICATION_ALL_FILE_IDS;
+    }
+
+    public static byte[] getApplicationAllFileIdsIso() {
+        return APPLICATION_ALL_FILE_IDS_ISO;
     }
 
     public static FileSettings[] getApplicationAllFileSettings() {

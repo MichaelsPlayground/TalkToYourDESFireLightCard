@@ -1,4 +1,4 @@
-package de.androidcrypto.talktoyourdesfirecard.nfcjlib;
+package de.androidcrypto.talktoyourdesfirelightcard.nfcjlib;
 
 /**
  * Compute the CRC16.

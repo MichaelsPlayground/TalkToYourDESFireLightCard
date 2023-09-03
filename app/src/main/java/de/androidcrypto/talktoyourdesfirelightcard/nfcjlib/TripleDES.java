@@ -1,6 +1,6 @@
-package de.androidcrypto.talktoyourdesfirecard.nfcjlib;
+package de.androidcrypto.talktoyourdesfirelightcard.nfcjlib;
 
-import static de.androidcrypto.talktoyourdesfirecard.Utils.printData;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.printData;
 
 import android.util.Log;
 

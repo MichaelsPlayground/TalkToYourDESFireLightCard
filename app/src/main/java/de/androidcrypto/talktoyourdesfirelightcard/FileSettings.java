@@ -1,4 +1,4 @@
-package de.androidcrypto.talktoyourdesfirecard;
+package de.androidcrypto.talktoyourdesfirelightcard;
 
 import java.util.Arrays;
 
@@ -29,7 +29,7 @@ public class FileSettings {
     private String fileTypeName;
     private byte communicationSettings;
     private String communicationSettingsName;
-    private DesfireEv3.CommunicationSettings desfireEv3CommunicationSettings;
+    private DesfireLight.CommunicationSettings desfireEv3CommunicationSettings;
     private byte accessRightsRwCar; // Right & Write access key | Change access key
     private byte accessRightsRW; // Read access key | Write access key
     private int accessRightsRw, accessRightsCar, accessRightsR, accessRightsW;
@@ -181,15 +181,15 @@ public class FileSettings {
             position++;
             if (communicationSettings == (byte) 0x00) {
                 communicationSettingsName = COMMUNICATION_SETTING_NAME_PLAIN;
-                desfireEv3CommunicationSettings = DesfireEv3.CommunicationSettings.Plain;
+                desfireEv3CommunicationSettings = DesfireLight.CommunicationSettings.Plain;
             }
             if (communicationSettings == (byte) 0x01) {
                 communicationSettingsName = COMMUNICATION_SETTING_NAME_MACED;
-                desfireEv3CommunicationSettings = DesfireEv3.CommunicationSettings.MACed;
+                desfireEv3CommunicationSettings = DesfireLight.CommunicationSettings.MACed;
             }
             if (communicationSettings == (byte) 0x03) {
                 communicationSettingsName = COMMUNICATION_SETTING_NAME_ENCRYPTED;
-                desfireEv3CommunicationSettings = DesfireEv3.CommunicationSettings.Full;
+                desfireEv3CommunicationSettings = DesfireLight.CommunicationSettings.Full;
             }
             accessRightsRwCar = completeResponse[position];
             position++;
@@ -375,17 +375,17 @@ public class FileSettings {
             // plain mode
             communicationSettings = (byte) 0x00;
             communicationSettingsName = COMMUNICATION_SETTING_NAME_PLAIN;
-            desfireEv3CommunicationSettings = DesfireEv3.CommunicationSettings.Plain;
+            desfireEv3CommunicationSettings = DesfireLight.CommunicationSettings.Plain;
         } else {
             // MACed or FullEnciphered
             if (!fileOptionBit1) {
                 communicationSettings = (byte) 0x01;
                 communicationSettingsName = COMMUNICATION_SETTING_NAME_MACED;
-                desfireEv3CommunicationSettings = DesfireEv3.CommunicationSettings.MACed;
+                desfireEv3CommunicationSettings = DesfireLight.CommunicationSettings.MACed;
             } else {
                 communicationSettings = (byte) 0x03;
                 communicationSettingsName = COMMUNICATION_SETTING_NAME_ENCRYPTED;
-                desfireEv3CommunicationSettings = DesfireEv3.CommunicationSettings.Full;
+                desfireEv3CommunicationSettings = DesfireLight.CommunicationSettings.Full;
             }
         }
         // analyzing the other bits
@@ -689,7 +689,7 @@ public class FileSettings {
         return communicationSettingsName;
     }
 
-    public DesfireEv3.CommunicationSettings getDesfireEv3CommunicationSettings() {
+    public DesfireLight.CommunicationSettings getDesfireEv3CommunicationSettings() {
         return desfireEv3CommunicationSettings;
     }
 

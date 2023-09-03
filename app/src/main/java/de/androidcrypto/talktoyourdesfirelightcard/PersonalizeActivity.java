@@ -1,4 +1,4 @@
-package de.androidcrypto.talktoyourdesfirecard;
+package de.androidcrypto.talktoyourdesfirelightcard;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;

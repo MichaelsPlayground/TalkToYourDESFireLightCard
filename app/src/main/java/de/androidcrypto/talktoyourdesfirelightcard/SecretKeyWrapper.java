@@ -1,4 +1,4 @@
-package de.androidcrypto.talktoyourdesfirecard;
+package de.androidcrypto.talktoyourdesfirelightcard;
 
 /*
  * Copyright (C) 2013 The Android Open Source Project
@@ -18,14 +18,12 @@ package de.androidcrypto.talktoyourdesfirecard;
 
 import android.content.Context;
 import android.os.Build;
-import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
 import androidx.annotation.RequiresApi;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -34,7 +32,7 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
-import javax.security.auth.x500.X500Principal;
+
 /**
  * Wraps {@link SecretKey} instances using a public/private key pair stored in
  * the platform {@link KeyStore}. This allows us to protect symmetric keys with

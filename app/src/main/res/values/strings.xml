@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Talk to your DESFire Card</string>
+    <string name="app_name">Talk to a DESFire Light card</string>
 
     <!-- strings for format picc -->
     <string name="header_format_picc">Format the PICC</string>

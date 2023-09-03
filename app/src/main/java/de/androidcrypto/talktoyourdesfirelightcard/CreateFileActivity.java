@@ -1,7 +1,7 @@
-package de.androidcrypto.talktoyourdesfirecard;
+package de.androidcrypto.talktoyourdesfirelightcard;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.setBitInByte;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.unsetBitInByte;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -24,25 +24,33 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-public class FormatPiccActivity extends AppCompatActivity implements NfcAdapter.ReaderCallback {
+public class CreateFileActivity extends AppCompatActivity implements NfcAdapter.ReaderCallback {
 
-    private static final String TAG = FormatPiccActivity.class.getName();
+    private static final String TAG = CreateFileActivity.class.getName();
 
     /**
      * UI elements
      */
 
-    private com.google.android.material.textfield.TextInputEditText output;
-    private com.google.android.material.textfield.TextInputLayout outputLayout;
+    private com.google.android.material.textfield.TextInputEditText output, applicationIdentifier, numberOfKeys, carAppKey;
+    private TextInputLayout outputLayout;
+    private CheckBox masterKeyIsChangable, masterKeyAuthenticationNeededDirListing, masterKeyAuthenticationNeededCreateDelete, masterKeySettingsChangeAllowed;
     private Button moreInformation;
+
+    private RadioButton rbDoNothing, rbChangeAppKeysToChanged, rbChangeAppKeysToDefault, rbChangeMasterAppKeyToChanged, rbChangeMasterAppKeyToDefault;
 
     /**
      * general constants
@@ -50,7 +58,7 @@ public class FormatPiccActivity extends AppCompatActivity implements NfcAdapter.
 
     private final int COLOR_GREEN = Color.rgb(0, 255, 0);
     private final int COLOR_RED = Color.rgb(255, 0, 0);
-
+    private final byte[] RESPONSE_AUTHENTICATION_ERROR = new byte[]{(byte) 0x91, (byte) 0xAE};
 
     /**
      * NFC handling
@@ -61,21 +69,33 @@ public class FormatPiccActivity extends AppCompatActivity implements NfcAdapter.
     private byte[] tagIdByte;
 
     private DesfireEv3 desfireEv3;
+    private DesfireAuthenticateLegacy desfireLegacy;
 
-    private FileSettings fileSettings;
+    private byte[] errorCode;
+    private String errorCodeReason = "";
     private boolean isDesfireEv3 = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_format_picc);
+        setContentView(R.layout.activity_create_file);
 
         Toolbar myToolbar = (Toolbar) findViewById(R.id.main_toolbar);
         setSupportActionBar(myToolbar);
 
-        output = findViewById(R.id.etFormatPiccOutput);
-        outputLayout = findViewById(R.id.etFormatPiccOutputLayout);
-        moreInformation = findViewById(R.id.btnFormatPiccMoreInformation);
+        output = findViewById(R.id.etCreateFileOutput);
+        outputLayout = findViewById(R.id.etCreateFileOutputLayout);
+        moreInformation = findViewById(R.id.btnCreateFileMoreInformation);
+
+        applicationIdentifier = findViewById(R.id.etCreateFileAid);
+        numberOfKeys = findViewById(R.id.etCreateFileNumberOfKeys);
+        carAppKey = findViewById(R.id.etCreateFileCarKeyNumber);
+        masterKeyIsChangable = findViewById(R.id.cbCreateFileBit0MasterKeyIsChangeable);
+        masterKeyAuthenticationNeededDirListing = findViewById(R.id.cbCreateFileBit1MasterKeyAuthenticationNeededDirListing);
+        masterKeyAuthenticationNeededCreateDelete = findViewById(R.id.cbCreateFileBit2MasterKeyAuthenticationNeededCreateDelete);
+        masterKeySettingsChangeAllowed = findViewById(R.id.cbCreateFileBit3MasterKeySettingsChangeAllowed);
+
+        checkboxesToDefault();
 
         // hide soft keyboard from showing up on startup
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
@@ -86,22 +106,85 @@ public class FormatPiccActivity extends AppCompatActivity implements NfcAdapter.
             @Override
             public void onClick(View view) {
                 // provide more information about the application and file
-                showDialog(FormatPiccActivity.this, getResources().getString(R.string.more_information_format_picc));
+                showDialog(CreateFileActivity.this, getResources().getString(R.string.more_information_create_application));
             }
         });
     }
 
-    private void runFormatPicc() {
+    private void runCreateApplication() {
         clearOutputFields();
-        String logString = "runFormatPicc";
+        String logString = "runCreateApplication";
         writeToUiAppend(output, logString);
-        /**
-         * the method will do these 3 steps to format the PICC
-         * 1) select the Master Application
-         * 2) authenticate with the DEFAULT DES Master Application Key
-         * 3) format the PICC
-         * Note: all 3 step are encapsulated within the DesfireEv3 class
-         */
+
+        // sanity checks
+        String appId = applicationIdentifier.getText().toString();
+        if (TextUtils.isEmpty(appId)) {
+        }
+        byte[] appIdBytes = Utils.hexStringToByteArray(appId);
+        if (applicationIdentifier == null) {
+            writeToUiAppendBorderColor(output, outputLayout, "please enter a 6 hex characters long application identifier", COLOR_RED);
+            return;
+        }
+        //Utils.reverseByteArrayInPlace(applicationIdentifier); // change to LSB = change the order
+        if (appIdBytes.length != 3) {
+            writeToUiAppendBorderColor(output, outputLayout, "you did not enter a 6 hex string application ID", COLOR_RED);
+            return;
+        }
+        String numKeys = numberOfKeys.getText().toString();
+        if (TextUtils.isEmpty(numKeys)) {
+            writeToUiAppendBorderColor(output, outputLayout, "please enter the number of keys in range 1..14", COLOR_RED);
+            return;
+        }
+        int numberOfApplicationKeys = Integer.parseInt(numKeys);
+        if ((numberOfApplicationKeys < 1) || (numberOfApplicationKeys > 14)) {
+            writeToUiAppendBorderColor(output, outputLayout, "please enter the number of keys in range 1..14", COLOR_RED);
+            return;
+        }
+        // no sanity check on this as it is fixed
+        String carKeyNumber = carAppKey.getText().toString();
+        byte carKeyByte = Byte.parseByte(carKeyNumber);
+        int carKeyInt = Integer.parseInt(carKeyNumber);
+
+        // now the funny part - the application settings - bitwise combined with carKeyByte
+        /*
+			bit 0 is most right bis (counted from right to left)
+			bit 0 = application master key is changeable (1) or frozen (0)
+			bit 1 = application master key authentication is needed for file directory access (1)
+			bit 2 = application master key authentication is needed before CreateFile / DeleteFile (1)
+			bit 3 = change of the application master key settings is allowed (1)
+			bit 4-7 = hold the Access Rights for changing application keys (ChangeKey command)
+			• 0x0: Application master key authentication is necessary to change any key (default).
+			• 0x1 .. 0xD: Authentication with the specified key is necessary to change any key.
+			• 0xE: Authentication with the key to be changed (same KeyNo) is necessary to change a key.
+			• 0xF: All Keys (except application master key, see Bit0) within this application are frozen.
+		 */
+        byte appSettings = (byte) 0x00;
+        if (masterKeyIsChangable.isChecked()) {
+            appSettings = setBitInByte(appSettings, 0);
+        } else {
+            appSettings = unsetBitInByte(appSettings, 0);
+        }
+        // attention - the set/unset are changed due to naming
+        if (masterKeyAuthenticationNeededDirListing.isChecked()) {
+            appSettings = unsetBitInByte(appSettings, 1);
+        } else {
+            appSettings = setBitInByte(appSettings, 1);
+        }
+        // attention - the set/unset are changed due to naming
+        if (masterKeyAuthenticationNeededCreateDelete.isChecked()) {
+            appSettings = unsetBitInByte(appSettings, 2);
+        } else {
+            appSettings = setBitInByte(appSettings, 2);
+        }
+        if (masterKeySettingsChangeAllowed.isChecked()) {
+            appSettings = setBitInByte(appSettings, 3);
+        } else {
+            appSettings = unsetBitInByte(appSettings, 3);
+        }
+        // now we concatenate the Car Application Key with the App Settings
+        char upperNibble = Utils.byteToUpperNibble(carKeyByte);
+        char lowerNibble = Utils.byteToLowerNibble(appSettings);
+        byte applicationMasterSettings = Utils.nibblesToByte(upperNibble, lowerNibble);
 
         boolean success;
         byte[] errorCode;
@@ -109,13 +192,23 @@ public class FormatPiccActivity extends AppCompatActivity implements NfcAdapter.
         writeToUiAppend(output, "");
         String stepString = "1 select the Master Application";
         writeToUiAppend(output, stepString);
-        stepString = "2 authenticate with the DEFAULT DES Master Application Key";
-        writeToUiAppend(output, stepString);
-        stepString = "3 format the PICC";
-        writeToUiAppend(output, stepString);
+        success = desfireEv3.selectApplicationByAid(DesfireEv3.MASTER_APPLICATION_IDENTIFIER);
+        errorCode = desfireEv3.getErrorCode();
+        if (success) {
+            writeToUiAppendBorderColor(stepString + " SUCCESS", COLOR_GREEN);
+        } else {
+            if (Arrays.equals(errorCode, DesfireEv3.RESPONSE_DUPLICATE_ERROR)) {
+                writeToUiAppendBorderColor(stepString + " FAILURE because application already exits", COLOR_GREEN);
+            } else {
+                writeToUiAppendBorderColor(stepString + " FAILURE with ErrorCode " + EV3.getErrorCode(errorCode) + " reason: " + errorCodeReason, COLOR_RED);
+                return;
+            }
+        }
 
-        success = desfireEv3.desfireD40.formatPicc();
-        errorCode = desfireEv3.desfireD40.getErrorCode();
+        stepString = "2 create the new application";
+        writeToUiAppend(output, stepString);
+        success = desfireEv3.createApplicationAes(appIdBytes, numberOfApplicationKeys, applicationMasterSettings);
+        errorCode = desfireEv3.getErrorCode();
         if (success) {
             writeToUiAppendBorderColor(stepString + " SUCCESS", COLOR_GREEN);
         } else {
@@ -127,6 +220,14 @@ public class FormatPiccActivity extends AppCompatActivity implements NfcAdapter.
             }
         }
         vibrateShort();
+    }
+
+
+    private void checkboxesToDefault() {
+        masterKeyIsChangable.setChecked(true);
+        masterKeyAuthenticationNeededDirListing.setChecked(false);
+        masterKeyAuthenticationNeededCreateDelete.setChecked(false);
+        masterKeySettingsChangeAllowed.setChecked(true);
     }
 
     /**
@@ -159,6 +260,7 @@ public class FormatPiccActivity extends AppCompatActivity implements NfcAdapter.
                     return;
                 }
                 desfireEv3 = new DesfireEv3(isoDep);
+                desfireLegacy = new DesfireAuthenticateLegacy(isoDep, false);
 
                 isDesfireEv3 = desfireEv3.checkForDESFireEv3();
                 if (!isDesfireEv3) {
@@ -172,7 +274,7 @@ public class FormatPiccActivity extends AppCompatActivity implements NfcAdapter.
                 Log.d(TAG, "tag id: " + Utils.bytesToHex(tagIdByte));
                 writeToUiAppendBorderColor("The app and DESFire EV3 tag are ready to use", COLOR_GREEN);
 
-                runFormatPicc();
+                runCreateApplication();
 
             }
         } catch (IOException e) {
@@ -354,7 +456,7 @@ public class FormatPiccActivity extends AppCompatActivity implements NfcAdapter.
         mGoToHome.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
-                Intent intent = new Intent(FormatPiccActivity.this, MainActivity.class);
+                Intent intent = new Intent(CreateFileActivity.this, MainActivity.class);
                 startActivity(intent);
                 finish();
                 return false;

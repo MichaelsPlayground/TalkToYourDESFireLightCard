@@ -1,4 +1,4 @@
-package de.androidcrypto.talktoyourdesfirecard;
+package de.androidcrypto.talktoyourdesfirelightcard;
 
 import android.nfc.tech.IsoDep;
 import android.text.TextUtils;
@@ -9,20 +9,15 @@ import androidx.annotation.NonNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
 import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import de.androidcrypto.talktoyourdesfirecard.nfcjlib.AES;
-import de.androidcrypto.talktoyourdesfirecard.nfcjlib.CRC16;
-import de.androidcrypto.talktoyourdesfirecard.nfcjlib.TripleDES;
+import de.androidcrypto.talktoyourdesfirelightcard.nfcjlib.CRC16;
+import de.androidcrypto.talktoyourdesfirelightcard.nfcjlib.TripleDES;
 
 /**
  * This class is based on the work of
@@ -1188,7 +1183,7 @@ public class DesfireAuthenticateLegacy {
         log(methodName, printData("ct1 Xored       ", ct1Xored));
 
         log(methodName, "4 decrypt ct1Xored using TripleDES.decrypt");
-        byte[] ct1XoredDecrypted = de.androidcrypto.talktoyourdesfirecard.nfcjlib.TripleDES.decrypt(tdesKey, ct1Xored, 0, 8);
+        byte[] ct1XoredDecrypted = de.androidcrypto.talktoyourdesfirelightcard.nfcjlib.TripleDES.decrypt(tdesKey, ct1Xored, 0, 8);
         log(methodName, printData("ct1Xored decrypt", ct1XoredDecrypted));
 
         log(methodName, "5 copy ct1XoredDecrypted to cipheredBlock");
@@ -1200,7 +1195,7 @@ public class DesfireAuthenticateLegacy {
         log(methodName, printData("ct2Xored        ", ct2Xored));
 
         log(methodName, "7 decrypt ct2Xored using TripleDES.decrypt");
-        byte[] ct2XoredDecrypted = de.androidcrypto.talktoyourdesfirecard.nfcjlib.TripleDES.decrypt(tdesKey, ct2Xored, 0, 8);
+        byte[] ct2XoredDecrypted = de.androidcrypto.talktoyourdesfirelightcard.nfcjlib.TripleDES.decrypt(tdesKey, ct2Xored, 0, 8);
         log(methodName, printData("ct2 Xored decrypt", ct2XoredDecrypted));
 
         log(methodName, "8 Note: for more data this would be extended but we are ready now");

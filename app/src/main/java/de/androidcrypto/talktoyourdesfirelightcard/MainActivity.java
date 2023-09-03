@@ -1,7 +1,7 @@
-package de.androidcrypto.talktoyourdesfirecard;
+package de.androidcrypto.talktoyourdesfirelightcard;
 
-import static de.androidcrypto.talktoyourdesfirecard.Utils.divideArrayToList;
-import static de.androidcrypto.talktoyourdesfirecard.Utils.printData;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.divideArrayToList;
+import static de.androidcrypto.talktoyourdesfirelightcard.Utils.printData;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -196,8 +196,9 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
 
     // DesfireAuthenticationProximity is used for old DES d40 authenticate tasks. The constructor needs the isoDep object so it is initialized in 'onTagDiscovered'
     //DesfireAuthenticateProximity desfireAuthenticateProximity;
-    DesfireAuthenticateLegacy desfireAuthenticateLegacy;
-    DesfireEv3 desfireEv3;
+    private DesfireAuthenticateLegacy desfireAuthenticateLegacy;
+    private DesfireLight desfireLight;
+    private boolean isDesfireLight = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -296,58 +297,63 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
 
                 isFileListRead = false; // invalidates the data
 
-                // select Master Application first
-                boolean success = desfireEv3.selectApplicationByAid(DesfireEv3.MASTER_APPLICATION_IDENTIFIER);
-                byte[] errorCodeDf = desfireEv3.getErrorCode();
-                String errorCodeReason = desfireEv3.getErrorCodeReason();
+                // select the Application
+                boolean success = desfireLight.selectApplicationIsoByDfName(DesfireLight.APPLICATION_DF_NAME_DEFAULT);
+                byte[] errorCodeDf = desfireLight.getErrorCode();
+                String errorCodeReason = desfireLight.getErrorCodeReason();
                 if (!success) {
                     writeToUiAppend(output, "cannot select Master Application, aborted");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(errorCodeDf), COLOR_RED);
                     return;
                 }
+                selectedApplicationId = DesfireLight.APPLICATION_DF_NAME_DEFAULT.clone();
+                applicationSelected.setText(Utils.bytesToHexNpe(selectedApplicationId));
+/*
 
-                List<byte[]> applicationIdList = desfireEv3.getApplicationIdsList();
-                errorCodeDf = desfireEv3.getErrorCode();
-                errorCodeReason = desfireEv3.getErrorCodeReason();
-                if ((applicationIdList == null) || (applicationIdList.size() == 0)) {
-                    writeToUiAppend(output, "there are no application IDs on the  PICC");
+                //List<byte[]> fileIdList = desfireLight.getFileIdsIsoList();
+                List<byte[]> fileIdList = desfireLight.getAFileIdsList();
+                //List<byte[]> applicationIdList = desfireLight.getApplicationIdsList();
+                errorCodeDf = desfireLight.getErrorCode();
+                errorCodeReason = desfireLight.getErrorCodeReason();
+                if ((fileIdList == null) || (fileIdList.size() == 0)) {
+                    writeToUiAppend(output, "there are no file IDs on the  PICC");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(errorCodeDf), COLOR_RED);
                     return;
                 }
 
-                String[] applicationList = new String[applicationIdList.size()];
-                for (int i = 0; i < applicationIdList.size(); i++) {
-                    byte[] aid = applicationIdList.get(i);
+                String[] fileList = new String[fileIdList.size()];
+                for (int i = 0; i < fileIdList.size(); i++) {
+                    byte[] fid = fileIdList.get(i);
                     //Utils.reverseByteArrayInPlace(aid);
-                    applicationList[i] = Utils.bytesToHexNpeUpperCase(aid);
+                    fileList[i] = Utils.bytesToHexNpeUpperCase(fid);
                 }
 
                 // setup the alert builder
                 AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
                 builder.setTitle("Choose an application");
 
-                builder.setItems(applicationList, new DialogInterface.OnClickListener() {
+                builder.setItems(fileList, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        writeToUiAppend(output, "you  selected nr " + which + " = " + applicationList[which]);
-                        selectedApplicationId = Utils.hexStringToByteArray(applicationList[which]);
+                        writeToUiAppend(output, "you  selected nr " + which + " = " + fileList[which]);
+                        selectedApplicationId = Utils.hexStringToByteArray(fileList[which]);
                         // now we run the command to select the application
                         byte[] responseData = new byte[2];
                         byte[] aid = selectedApplicationId.clone();
                         //Utils.reverseByteArrayInPlace(aid);
-                        boolean result = desfireEv3.selectApplicationByAid(aid);
-                        responseData = desfireEv3.getErrorCode();
+                        boolean result = desfireLight.selectApplicationByAid(aid);
+                        responseData = desfireLight.getErrorCode();
                         writeToUiAppend(output, "result of selectApplication: " + result);
                         int colorFromErrorCode = EV3.getColorFromErrorCode(responseData);
                         writeToUiAppendBorderColor(errorCode, errorCodeLayout, "selectApplication: " + EV3.getErrorCode(responseData), colorFromErrorCode);
-                        applicationSelected.setText(applicationList[which]);
-                        selectedApplicationId = Utils.hexStringToByteArray(applicationList[which]);
+                        applicationSelected.setText(fileList[which]);
+                        selectedApplicationId = Utils.hexStringToByteArray(fileList[which]);
 
                         // try to read all fileIds and fileSettings within this application
                         Log.d(TAG, "getAllFileIds and allFileSettings");
-                        allFileIds = desfireEv3.getAllFileIds();
-                        allFileSettings = desfireEv3.getAllFileSettings();
-                        byte[] responseCode = desfireEv3.getErrorCode();
+                        allFileIds = desfireLight.getAllFileIds();
+                        allFileSettings = desfireLight.getAllFileSettings();
+                        byte[] responseCode = desfireLight.getErrorCode();
                         if ((allFileIds == null) || (allFileIds.length == 0)) {
                             writeToUiAppend(output, "no file IDs found, aborted");
                             writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE", COLOR_RED);
@@ -359,8 +365,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                             return;
                         }
                         isFileListRead = true;
-                        isTransactionMacFilePresent = desfireEv3.isTransactionMacFilePresent();
-                        isCommitReaderIdEnabled = desfireEv3.isTransactionMacCommitReaderId();
+                        isTransactionMacFilePresent = desfireLight.isTransactionMacFilePresent();
+                        isCommitReaderIdEnabled = desfireLight.isTransactionMacCommitReaderId();
 
                         // for some actions we do need active authentication and key changing
                         llSectionAuthentication.setVisibility(View.VISIBLE);
@@ -370,8 +376,9 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 // create and show the alert dialog
                 AlertDialog dialog = builder.create();
                 dialog.show();
+                */
             }
-        });
+         });
 
         fileSelect.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -391,9 +398,9 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 // if we already got this information this steps are skipped
                 if (!isFileListRead) {
                     Log.d(TAG, "getAllFileIds and allFileSettings");
-                    allFileIds = desfireEv3.getAllFileIds();
-                    allFileSettings = desfireEv3.getAllFileSettings();
-                    byte[] responseCode = desfireEv3.getErrorCode();
+                    allFileIds = desfireLight.getAllFileIds();
+                    allFileSettings = desfireLight.getAllFileSettings();
+                    byte[] responseCode = desfireLight.getErrorCode();
                     if ((allFileIds == null) || (allFileIds.length == 0)) {
                         writeToUiAppend(output, "no file IDs found, aborted");
                         writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE", COLOR_RED);
@@ -405,8 +412,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         return;
                     }
                     isFileListRead = true;
-                    isTransactionMacFilePresent = desfireEv3.isTransactionMacFilePresent();
-                    isCommitReaderIdEnabled = desfireEv3.isTransactionMacCommitReaderId();
+                    isTransactionMacFilePresent = desfireLight.isTransactionMacFilePresent();
+                    isCommitReaderIdEnabled = desfireLight.isTransactionMacCommitReaderId();
                 } else {
                     Log.d(TAG, "getAllFileIds and allFileSettings SKIPPED");
                 }
@@ -438,6 +445,10 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         // here we are reading the fileSettings
                         String outputString = fileList[which] + " ";
                         byte fileIdByte = Byte.parseByte(selectedFileId);
+
+                        boolean suc = desfireLight.selectFileIsoByFileId(fileIdByte);
+                        Log.e(TAG, "selectFileIsoByFileId suc: " + suc);
+
                         selectedFileSettings = finalAllFileSettings[fileIdByte];
                         outputString += "(" + selectedFileSettings.getFileTypeName();
                         selectedFileSize = selectedFileSettings.getFileSizeInt();
@@ -549,7 +560,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 int fileSizeInt = selectedFileSettings.getFileSizeInt();
 
                 // pre-check if fileNumber is existing
-                boolean isFileExisting = desfireEv3.checkFileNumberExisting(fileIdByte);
+                boolean isFileExisting = desfireLight.checkFileNumberExisting(fileIdByte);
                 if (!isFileExisting) {
                     writeToUiAppend(output, logString + " The file does not exist, aborted");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " File not found error", COLOR_RED);
@@ -557,8 +568,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 }
 
                 byte[] responseData = new byte[2];
-                byte[] result = desfireEv3.readFromADataFile(fileIdByte, 0, fileSizeInt);
-                responseData = desfireEv3.getErrorCode();
+                byte[] result = desfireLight.readFromADataFile(fileIdByte, 0, fileSizeInt);
+                responseData = desfireLight.getErrorCode();
                 if (result == null) {
                     // something gone wrong
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " FAILURE with error " + EV3.getErrorCode(responseData));
@@ -569,7 +580,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with a READ ACCESS KEY ?");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 } else {
                     writeToUiAppend(output, logString + " fileNumber: " + fileIdByte + printData(" data", result));
@@ -598,7 +609,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 int fileSizeInt = selectedFileSettings.getFileSizeInt();
 
                 // pre-check if fileNumber is existing
-                boolean isFileExisting = desfireEv3.checkFileNumberExisting(fileIdByte);
+                boolean isFileExisting = desfireLight.checkFileNumberExisting(fileIdByte);
                 if (!isFileExisting) {
                     writeToUiAppend(output, logString + " The file does not exist, aborted");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " File not found error", COLOR_RED);
@@ -620,9 +631,9 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 }
 
                 byte[] responseData = new byte[2];
-                boolean success = desfireEv3.writeToADataFile(fileIdByte, 0, fullDataToWrite);
+                boolean success = desfireLight.writeToADataFile(fileIdByte, 0, fullDataToWrite);
 
-                responseData = desfireEv3.getErrorCode();
+                responseData = desfireLight.getErrorCode();
 
                 if (success) {
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " SUCCESS");
@@ -633,7 +644,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with a WRITE ACCESS KEY ?");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 }
                 if (selectedFileSettings.getFileType() == FileSettings.STANDARD_FILE_TYPE) {
@@ -648,33 +659,33 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                     if (commMode == (byte) 0x00) {
                         // Plain
                         // this fails when a Transaction MAC file with enabled Commit ReaderId option is existent
-                        success = desfireEv3.commitTransactionPlain();
+                        success = desfireLight.commitTransactionPlain();
                     }
                     if ((commMode == (byte) 0x01) || (commMode == (byte) 0x03)) {
                         // MACed or Full enciphered
-                        if (desfireEv3.isTransactionMacFilePresent()) {
-                            if (desfireEv3.isTransactionMacCommitReaderId()) {
+                        if (desfireLight.isTransactionMacFilePresent()) {
+                            if (desfireLight.isTransactionMacCommitReaderId()) {
                                 // this  is hardcoded when working with TransactionMAC files AND enabled CommitReaderId feature
                                 writeToUiAppend(output, "A TransactionMAC file is present with ENABLED CommitReaderId");
-                                success = desfireEv3.commitTransactionFull(true);
+                                success = desfireLight.commitTransactionFull(true);
                             } else {
                                 writeToUiAppend(output, "A TransactionMAC file is present with DISABLED CommitReaderId");
-                                success = desfireEv3.commitTransactionFullReturnTmv();
+                                success = desfireLight.commitTransactionFullReturnTmv();
                             }
                         } else {
                             // no transaction mac file is present
                             writeToUiAppend(output, "A TransactionMAC file is NOT present, running regular commitTransaction");
-                            success = desfireEv3.commitTransactionWithoutTmacFull();
-                            Log.d(TAG, desfireEv3.getLogData());
+                            success = desfireLight.commitTransactionWithoutTmacFull();
+                            Log.d(TAG, desfireLight.getLogData());
                         }
                     }
 
-                    responseData = desfireEv3.getErrorCode();
+                    responseData = desfireLight.getErrorCode();
                     if (success) {
                         writeToUiAppend(output, "data is written to Backup file number " + fileIdByte);
                         // return the Transaction MAC counter and value
                         if (isTransactionMacFilePresent) {
-                            byte[] returnedTmacCV = desfireEv3.getTransactionMacFileReturnedTmcv();
+                            byte[] returnedTmacCV = desfireLight.getTransactionMacFileReturnedTmcv();
                             writeToUiAppend(output, printData("returned TMAC counter and value", returnedTmacCV));
                             if ((returnedTmacCV != null) && (returnedTmacCV.length == 12)) {
                                 byte[] tmc = Arrays.copyOfRange(returnedTmacCV, 0, 4);
@@ -687,7 +698,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         vibrateShort();
                     } else {
                         writeToUiAppendBorderColor(errorCode, errorCodeLayout, "commit" + " FAILURE with error code: " + EV3.getErrorCode(responseData), COLOR_RED);
-                        writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                        writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                         return;
                     }
                 }
@@ -716,7 +727,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 byte fileIdByte = Byte.parseByte(selectedFileId);
 
                 // pre-check if fileNumber is existing
-                boolean isFileExisting = desfireEv3.checkFileNumberExisting(fileIdByte);
+                boolean isFileExisting = desfireLight.checkFileNumberExisting(fileIdByte);
                 if (!isFileExisting) {
                     writeToUiAppend(output, logString + " The file does not exist, aborted");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " File not found error", COLOR_RED);
@@ -724,8 +735,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 }
 
                 byte[] responseData = new byte[2];
-                int result = desfireEv3.readFromAValueFile(fileIdByte);
-                responseData = desfireEv3.getErrorCode();
+                int result = desfireLight.readFromAValueFile(fileIdByte);
+                responseData = desfireLight.getErrorCode();
                 if (result < 0) {
                     // something gone wrong
                     writeToUiAppend(output, logString + " FAILURE with error " + EV3.getErrorCode(responseData));
@@ -760,7 +771,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 byte fileIdByte = Byte.parseByte(selectedFileId);
 
                 // pre-check if fileNumber is existing
-                boolean isFileExisting = desfireEv3.checkFileNumberExisting(fileIdByte);
+                boolean isFileExisting = desfireLight.checkFileNumberExisting(fileIdByte);
                 if (!isFileExisting) {
                     writeToUiAppend(output, logString + " The file does not exist, aborted");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " File not found error", COLOR_RED);
@@ -770,8 +781,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 writeToUiAppend(output, "CREDIT the value by " + creditValueChange + " units");
 
                 byte[] responseData = new byte[2];
-                boolean success = desfireEv3.changeAValueFile(fileIdByte, creditValueChange, true);
-                responseData = desfireEv3.getErrorCode();
+                boolean success = desfireLight.changeAValueFile(fileIdByte, creditValueChange, true);
+                responseData = desfireLight.getErrorCode();
                 if (success) {
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " SUCCESS");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " SUCCESS", COLOR_GREEN);
@@ -785,7 +796,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "Note: you need to AUTHENTICATE again when trying to access the Value file again !");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 }
 
@@ -796,33 +807,33 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                     if (commMode == (byte) 0x00) {
                         // Plain
                         // this fails when a Transaction MAC file with enabled Commit ReaderId option is existent
-                        success = desfireEv3.commitTransactionPlain();
+                        success = desfireLight.commitTransactionPlain();
                     }
                     if ((commMode == (byte) 0x01) || (commMode == (byte) 0x03)) {
                         // MACed or Full enciphered
-                        if (desfireEv3.isTransactionMacFilePresent()) {
-                            if (desfireEv3.isTransactionMacCommitReaderId()) {
+                        if (desfireLight.isTransactionMacFilePresent()) {
+                            if (desfireLight.isTransactionMacCommitReaderId()) {
                                 // this  is hardcoded when working with TransactionMAC files AND enabled CommitReaderId feature
                                 writeToUiAppend(output, "A TransactionMAC file is present with ENABLED CommitReaderId");
-                                success = desfireEv3.commitTransactionFull(true);
+                                success = desfireLight.commitTransactionFull(true);
                             } else {
                                 writeToUiAppend(output, "A TransactionMAC file is present with DISABLED CommitReaderId");
-                                success = desfireEv3.commitTransactionFullReturnTmv();
+                                success = desfireLight.commitTransactionFullReturnTmv();
                             }
                         } else {
                             // no transaction mac file is present
                             writeToUiAppend(output, "A TransactionMAC file is NOT present, running regular commitTransaction");
-                            success = desfireEv3.commitTransactionWithoutTmacFull();
-                            Log.d(TAG, desfireEv3.getLogData());
+                            success = desfireLight.commitTransactionWithoutTmacFull();
+                            Log.d(TAG, desfireLight.getLogData());
                         }
                     }
 
-                    responseData = desfireEv3.getErrorCode();
+                    responseData = desfireLight.getErrorCode();
                     if (success) {
                         writeToUiAppend(output, "data is written to Value file number " + fileIdByte);
                         // return the Transaction MAC counter and value
                         if (isTransactionMacFilePresent) {
-                            byte[] returnedTmacCV = desfireEv3.getTransactionMacFileReturnedTmcv();
+                            byte[] returnedTmacCV = desfireLight.getTransactionMacFileReturnedTmcv();
                             writeToUiAppend(output, printData("returned TMAC counter and value", returnedTmacCV));
                             if ((returnedTmacCV != null) && (returnedTmacCV.length == 12)) {
                                 byte[] tmc = Arrays.copyOfRange(returnedTmacCV, 0, 4);
@@ -835,7 +846,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         vibrateShort();
                     } else {
                         writeToUiAppendBorderColor(errorCode, errorCodeLayout, "commit" + " FAILURE with error code: " + EV3.getErrorCode(responseData), COLOR_RED);
-                        writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                        writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                         return;
                     }
                 }
@@ -860,7 +871,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 byte fileIdByte = Byte.parseByte(selectedFileId);
 
                 // pre-check if fileNumber is existing
-                boolean isFileExisting = desfireEv3.checkFileNumberExisting(fileIdByte);
+                boolean isFileExisting = desfireLight.checkFileNumberExisting(fileIdByte);
                 if (!isFileExisting) {
                     writeToUiAppend(output, logString + " The file does not exist, aborted");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " File not found error", COLOR_RED);
@@ -870,8 +881,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 writeToUiAppend(output, "DEBIT the value by " + creditValueChange + " units");
 
                 byte[] responseData = new byte[2];
-                boolean success = desfireEv3.changeAValueFile(fileIdByte, creditValueChange, false);
-                responseData = desfireEv3.getErrorCode();
+                boolean success = desfireLight.changeAValueFile(fileIdByte, creditValueChange, false);
+                responseData = desfireLight.getErrorCode();
                 if (success) {
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " SUCCESS");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " SUCCESS", COLOR_GREEN);
@@ -885,7 +896,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "Note: you need to authenticate again when trying to access the Value file again !");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 }
 
@@ -896,33 +907,33 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                     if (commMode == (byte) 0x00) {
                         // Plain
                         // this fails when a Transaction MAC file with enabled Commit ReaderId option is existent
-                        success = desfireEv3.commitTransactionPlain();
+                        success = desfireLight.commitTransactionPlain();
                     }
                     if ((commMode == (byte) 0x01) || (commMode == (byte) 0x03)) {
                         // MACed or Full enciphered
-                        if (desfireEv3.isTransactionMacFilePresent()) {
-                            if (desfireEv3.isTransactionMacCommitReaderId()) {
+                        if (desfireLight.isTransactionMacFilePresent()) {
+                            if (desfireLight.isTransactionMacCommitReaderId()) {
                                 // this  is hardcoded when working with TransactionMAC files AND enabled CommitReaderId feature
                                 writeToUiAppend(output, "A TransactionMAC file is present with ENABLED CommitReaderId");
-                                success = desfireEv3.commitTransactionFull(true);
+                                success = desfireLight.commitTransactionFull(true);
                             } else {
                                 writeToUiAppend(output, "A TransactionMAC file is present with DISABLED CommitReaderId");
-                                success = desfireEv3.commitTransactionFullReturnTmv();
+                                success = desfireLight.commitTransactionFullReturnTmv();
                             }
                         } else {
                             // no transaction mac file is present
                             writeToUiAppend(output, "A TransactionMAC file is NOT present, running regular commitTransaction");
-                            success = desfireEv3.commitTransactionWithoutTmacFull();
-                            Log.d(TAG, desfireEv3.getLogData());
+                            success = desfireLight.commitTransactionWithoutTmacFull();
+                            Log.d(TAG, desfireLight.getLogData());
                         }
                     }
 
-                    responseData = desfireEv3.getErrorCode();
+                    responseData = desfireLight.getErrorCode();
                     if (success) {
                         writeToUiAppend(output, "data is written to Value file number " + fileIdByte);
                         // return the Transaction MAC counter and value
                         if (isTransactionMacFilePresent) {
-                            byte[] returnedTmacCV = desfireEv3.getTransactionMacFileReturnedTmcv();
+                            byte[] returnedTmacCV = desfireLight.getTransactionMacFileReturnedTmcv();
                             writeToUiAppend(output, printData("returned TMAC counter and value", returnedTmacCV));
                             if ((returnedTmacCV != null) && (returnedTmacCV.length == 12)) {
                                 byte[] tmc = Arrays.copyOfRange(returnedTmacCV, 0, 4);
@@ -935,7 +946,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         vibrateShort();
                     } else {
                         writeToUiAppendBorderColor(errorCode, errorCodeLayout, "commit" + " FAILURE with error code: " + EV3.getErrorCode(responseData), COLOR_RED);
-                        writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                        writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                         return;
                     }
                 }
@@ -964,7 +975,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 int fileSizeInt = selectedFileSettings.getRecordSizeInt();
 
                 // pre-check if fileNumber is existing
-                boolean isFileExisting = desfireEv3.checkFileNumberExisting(fileIdByte);
+                boolean isFileExisting = desfireLight.checkFileNumberExisting(fileIdByte);
                 if (!isFileExisting) {
                     writeToUiAppend(output, logString + " The file does not exist, aborted");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " File not found error", COLOR_RED);
@@ -972,9 +983,9 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 }
 
                 byte[] responseData = new byte[2];
-                //byte[] result = desfireEv3.readFromARecordFile(fileIdByte, 0, fileSizeInt);
-                byte[] result = desfireEv3.readFromARecordFile(fileIdByte, 0, 0);
-                responseData = desfireEv3.getErrorCode();
+                //byte[] result = desfireLight.readFromARecordFile(fileIdByte, 0, fileSizeInt);
+                byte[] result = desfireLight.readFromARecordFile(fileIdByte, 0, 0);
+                responseData = desfireLight.getErrorCode();
                 if (result == null) {
                     // something gone wrong
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " FAILURE with error " + EV3.getErrorCode(responseData));
@@ -988,7 +999,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "as we received a Boundary Error - there might be NO records to read");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 } else {
                     // split the records
@@ -1022,7 +1033,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 int fileSizeInt = selectedFileSettings.getRecordSizeInt();
 
                 // pre-check if fileNumber is existing
-                boolean isFileExisting = desfireEv3.checkFileNumberExisting(fileIdByte);
+                boolean isFileExisting = desfireLight.checkFileNumberExisting(fileIdByte);
                 if (!isFileExisting) {
                     writeToUiAppend(output, logString + " The file does not exist, aborted");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " File not found error", COLOR_RED);
@@ -1044,8 +1055,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 }
 
                 byte[] responseData = new byte[2];
-                boolean success = desfireEv3.writeToARecordFile(fileIdByte, 0, fullDataToWrite);
-                responseData = desfireEv3.getErrorCode();
+                boolean success = desfireLight.writeToARecordFile(fileIdByte, 0, fullDataToWrite);
+                responseData = desfireLight.getErrorCode();
 
                 if (success) {
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " SUCCESS");
@@ -1056,7 +1067,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with a WRITE ACCESS KEY ?");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 }
                 if ((selectedFileSettings.getFileType() == FileSettings.LINEAR_RECORD_FILE_TYPE) || (selectedFileSettings.getFileType() == FileSettings.CYCLIC_RECORD_FILE_TYPE)) {
@@ -1066,34 +1077,34 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                     if (commMode == (byte) 0x00) {
                         // Plain
                         // this fails when a Transaction MAC file with enabled Commit ReaderId option is existent
-                        success = desfireEv3.commitTransactionPlain();
+                        success = desfireLight.commitTransactionPlain();
                     }
                     if ((commMode == (byte) 0x01) || (commMode == (byte) 0x03)) {
                         // MACed or Full enciphered
 
-                        if (desfireEv3.isTransactionMacFilePresent()) {
-                            if (desfireEv3.isTransactionMacCommitReaderId()) {
+                        if (desfireLight.isTransactionMacFilePresent()) {
+                            if (desfireLight.isTransactionMacCommitReaderId()) {
                                 // this  is hardcoded when working with TransactionMAC files AND enabled CommitReaderId feature
                                 writeToUiAppend(output, "A TransactionMAC file is present with ENABLED CommitReaderId");
-                                success = desfireEv3.commitTransactionFull(true);
+                                success = desfireLight.commitTransactionFull(true);
                             } else {
                                 writeToUiAppend(output, "A TransactionMAC file is present with DISABLED CommitReaderId");
-                                success = desfireEv3.commitTransactionFullReturnTmv();
+                                success = desfireLight.commitTransactionFullReturnTmv();
                             }
                         } else {
                             // no transaction mac file is present
                             writeToUiAppend(output, "A TransactionMAC file is NOT present, running regular commitTransaction");
-                            success = desfireEv3.commitTransactionWithoutTmacFull();
-                            Log.d(TAG, desfireEv3.getLogData());
+                            success = desfireLight.commitTransactionWithoutTmacFull();
+                            Log.d(TAG, desfireLight.getLogData());
                         }
                     }
 
-                    responseData = desfireEv3.getErrorCode();
+                    responseData = desfireLight.getErrorCode();
                     if (success) {
                         writeToUiAppend(output, "data is written to Record file number " + fileIdByte);
                         // return the Transaction MAC counter and value
                         if (isTransactionMacFilePresent) {
-                            byte[] returnedTmacCV = desfireEv3.getTransactionMacFileReturnedTmcv();
+                            byte[] returnedTmacCV = desfireLight.getTransactionMacFileReturnedTmcv();
                             writeToUiAppend(output, printData("returned TMAC counter and value", returnedTmacCV));
                             if ((returnedTmacCV != null) && (returnedTmacCV.length == 12)) {
                                 byte[] tmc = Arrays.copyOfRange(returnedTmacCV, 0, 4);
@@ -1106,7 +1117,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         vibrateShort();
                     } else {
                         writeToUiAppendBorderColor(errorCode, errorCodeLayout, "commit" + " FAILURE with error code: " + EV3.getErrorCode(responseData), COLOR_RED);
-                        writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                        writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                         return;
                     }
                 }
@@ -1128,8 +1139,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 writeToUiAppend(output, logString);
 
                 byte[] responseData = new byte[2];
-                boolean success = desfireEv3.authenticateAesLegacy(Constants.APPLICATION_KEY_MASTER_NUMBER, Constants.APPLICATION_KEY_MASTER_AES_DEFAULT);
-                responseData = desfireEv3.getErrorCode();
+                boolean success = desfireLight.authenticateAesLegacy(Constants.APPLICATION_KEY_MASTER_NUMBER, Constants.APPLICATION_KEY_MASTER_AES_DEFAULT);
+                responseData = desfireLight.getErrorCode();
                 if (success) {
                     Log.d(TAG, logString + " SUCCESS");
                     writeToUiAppend(output, logString + " SUCCESS");
@@ -1152,8 +1163,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 writeToUiAppend(output, logString);
 
                 byte[] responseData = new byte[2];
-                boolean success = desfireEv3.authenticateAesEv2First(Constants.APPLICATION_KEY_MASTER_NUMBER, Constants.APPLICATION_KEY_MASTER_AES_DEFAULT);
-                responseData = desfireEv3.getErrorCode();
+                boolean success = desfireLight.authenticateAesEv2First(Constants.APPLICATION_KEY_MASTER_NUMBER, Constants.APPLICATION_KEY_MASTER_AES_DEFAULT);
+                responseData = desfireLight.getErrorCode();
                 if (success) {
                     Log.d(TAG, logString + " SUCCESS");
                     writeToUiAppend(output, logString + " SUCCESS");
@@ -1175,8 +1186,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 String logString = "authenticate Legacy with CHANGED AES key number 0x00 = application master key";
                 writeToUiAppend(output, logString);
                 byte[] responseData = new byte[2];
-                boolean success = desfireEv3.authenticateAesLegacy(Constants.APPLICATION_KEY_MASTER_NUMBER, Constants.APPLICATION_KEY_MASTER_AES);
-                responseData = desfireEv3.getErrorCode();
+                boolean success = desfireLight.authenticateAesLegacy(Constants.APPLICATION_KEY_MASTER_NUMBER, Constants.APPLICATION_KEY_MASTER_AES);
+                responseData = desfireLight.getErrorCode();
                 if (success) {
                     Log.d(TAG, logString + " SUCCESS");
                     writeToUiAppend(output, logString + " SUCCESS");
@@ -1199,8 +1210,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 writeToUiAppend(output, logString);
 
                 byte[] responseData = new byte[2];
-                boolean success = desfireEv3.authenticateAesEv2First(Constants.APPLICATION_KEY_MASTER_NUMBER, Constants.APPLICATION_KEY_MASTER_AES);
-                responseData = desfireEv3.getErrorCode();
+                boolean success = desfireLight.authenticateAesEv2First(Constants.APPLICATION_KEY_MASTER_NUMBER, Constants.APPLICATION_KEY_MASTER_AES);
+                responseData = desfireLight.getErrorCode();
                 if (success) {
                     Log.d(TAG, logString + " SUCCESS");
                     writeToUiAppend(output, logString + " SUCCESS");
@@ -1359,8 +1370,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 }
 
                 byte keyVersion = (byte) 0x01;
-                boolean success = desfireEv3.changeApplicationKeyFull(Constants.APPLICATION_KEY_RW_NUMBER, keyVersion, Constants.APPLICATION_KEY_RW_AES, Constants.APPLICATION_KEY_RW_AES_DEFAULT);
-                byte[] responseData = desfireEv3.getErrorCode();
+                boolean success = desfireLight.changeApplicationKeyFull(Constants.APPLICATION_KEY_RW_NUMBER, keyVersion, Constants.APPLICATION_KEY_RW_AES, Constants.APPLICATION_KEY_RW_AES_DEFAULT);
+                byte[] responseData = desfireLight.getErrorCode();
 
                 if (success) {
                     writeToUiAppend(output, logString + " keyVersion " + keyVersion + " SUCCESS");
@@ -1372,7 +1383,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with a APPLICATION MASTER KEY ?");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 }
             }
@@ -1386,7 +1397,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 writeToUiAppend(output, logString);
                 byte keyVersion = (byte) 0x01;
                 boolean success = changeApplicationKey(Constants.APPLICATION_KEY_RW_NUMBER, keyVersion, Constants.APPLICATION_KEY_RW_AES_DEFAULT, Constants.APPLICATION_KEY_RW_AES);
-                byte[] responseData = desfireEv3.getErrorCode();
+                byte[] responseData = desfireLight.getErrorCode();
 
                 if (success) {
                     writeToUiAppend(output, logString + " keyVersion " + keyVersion + " SUCCESS");
@@ -1398,7 +1409,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with a APPLICATION MASTER KEY ?");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 }
             }
@@ -1421,15 +1432,15 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                     return;
                 }
                 byte fileIdByte = Byte.parseByte(selectedFileId);
-                DesfireEv3.CommunicationSettings commSettings = selectedFileSettings.getDesfireEv3CommunicationSettings();
+                DesfireLight.CommunicationSettings commSettings = selectedFileSettings.getDesfireEv3CommunicationSettings();
                 // this leaves the existing communication mode settings
                 int keyRw = 0;
                 int keyCar = 0;
                 int keyR = 0;
                 int keyW = 0;
                 byte[] responseData = new byte[2];
-                boolean success = desfireEv3.changeFileSettings(fileIdByte, commSettings, keyRw, keyCar, keyR, keyW);
-                responseData = desfireEv3.getErrorCode();
+                boolean success = desfireLight.changeFileSettings(fileIdByte, commSettings, keyRw, keyCar, keyR, keyW);
+                responseData = desfireLight.getErrorCode();
                 if (success) {
                     writeToUiAppend(output, logString + " SUCCESS");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " SUCCESS", COLOR_GREEN);
@@ -1457,15 +1468,15 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                     return;
                 }
                 byte fileIdByte = Byte.parseByte(selectedFileId);
-                DesfireEv3.CommunicationSettings commSettings = selectedFileSettings.getDesfireEv3CommunicationSettings();
+                DesfireLight.CommunicationSettings commSettings = selectedFileSettings.getDesfireEv3CommunicationSettings();
                 // this leaves the existing communication mode settings
                 int keyRw = 1;
                 int keyCar = 2;
                 int keyR = 3;
                 int keyW = 4;
                 byte[] responseData = new byte[2];
-                boolean success = desfireEv3.changeFileSettings(fileIdByte, commSettings, keyRw, keyCar, keyR, keyW);
-                responseData = desfireEv3.getErrorCode();
+                boolean success = desfireLight.changeFileSettings(fileIdByte, commSettings, keyRw, keyCar, keyR, keyW);
+                responseData = desfireLight.getErrorCode();
                 if (success) {
                     writeToUiAppend(output, logString + " SUCCESS");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " SUCCESS", COLOR_GREEN);
@@ -1500,12 +1511,12 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 byte[] responseData = new byte[2];
 
                 // this is the file creation with disabled Commit Reader Id option
-                boolean success = desfireEv3.createATransactionMacFileFull(fileIdByte, DesfireEv3.CommunicationSettings.Plain, 2, 1, TRANSACTION_MAC_KEY_AES);
+                boolean success = desfireLight.createATransactionMacFileFull(fileIdByte, DesfireLight.CommunicationSettings.Plain, 2, 1, TRANSACTION_MAC_KEY_AES);
 
                 // this is the file creation with enabled Commit Reader Id option
-                //boolean success = desfireEv3.createATransactionMacFileExtendedFull(fileIdByte, DesfireEv3.CommunicationSettings.Plain, 1, 2, 1, true, TRANSACTION_MAC_KEY_AES);
+                //boolean success = desfireLight.createATransactionMacFileExtendedFull(fileIdByte, DesfireEv3.CommunicationSettings.Plain, 1, 2, 1, true, TRANSACTION_MAC_KEY_AES);
 
-                responseData = desfireEv3.getErrorCode();
+                responseData = desfireLight.getErrorCode();
 
                 if (success) {
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " SUCCESS");
@@ -1517,7 +1528,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with a WRITE ACCESS KEY ?");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 }
             }
@@ -1538,12 +1549,12 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 byte[] responseData = new byte[2];
 
                 // this is the file creation with disabled Commit Reader Id option
-                //boolean success = desfireEv3.createATransactionMacFileFull(fileIdByte, DesfireEv3.CommunicationSettings.Plain, 2, 1, TRANSACTION_MAC_KEY_AES);
+                //boolean success = desfireLight.createATransactionMacFileFull(fileIdByte, DesfireEv3.CommunicationSettings.Plain, 2, 1, TRANSACTION_MAC_KEY_AES);
 
                 // this is the file creation with enabled Commit Reader Id option
-                boolean success = desfireEv3.createATransactionMacFileExtendedFull(fileIdByte, DesfireEv3.CommunicationSettings.Plain, 1, 2, 1, true, TRANSACTION_MAC_KEY_AES);
+                boolean success = desfireLight.createATransactionMacFileExtendedFull(fileIdByte, DesfireLight.CommunicationSettings.Plain, 1, 2, 1, true, TRANSACTION_MAC_KEY_AES);
 
-                responseData = desfireEv3.getErrorCode();
+                responseData = desfireLight.getErrorCode();
 
                 if (success) {
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " SUCCESS");
@@ -1555,7 +1566,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with a WRITE ACCESS KEY ?");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 }
             }
@@ -1573,8 +1584,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 writeToUiAppend(output, "Note: DO NOT authenticate with the Application Master Key first !");
 
                 byte[] responseData = new byte[2];
-                boolean success = desfireEv3.deleteFile(fileIdByte);
-                responseData = desfireEv3.getErrorCode();
+                boolean success = desfireLight.deleteFile(fileIdByte);
+                responseData = desfireLight.getErrorCode();
 
                 if (success) {
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " SUCCESS");
@@ -1586,7 +1597,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with a WRITE ACCESS KEY ?");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 }
             }
@@ -1609,14 +1620,14 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 byte fileIdByte = Byte.parseByte(selectedFileId);
 
                 // pre-check if fileNumber is existing
-                boolean isFileExisting = desfireEv3.checkFileNumberExisting(fileIdByte);
+                boolean isFileExisting = desfireLight.checkFileNumberExisting(fileIdByte);
                 if (!isFileExisting) {
                     writeToUiAppend(output, logString + " The file does not exist, aborted");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " File not found error", COLOR_RED);
                     return;
                 }
 
-                boolean isTransactionMacFile = desfireEv3.checkIsTransactionMacFileType(fileIdByte);
+                boolean isTransactionMacFile = desfireLight.checkIsTransactionMacFileType(fileIdByte);
                 if (!isTransactionMacFile) {
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " is NOT a TransactionMAC file, aborted");
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE", COLOR_RED);
@@ -1624,8 +1635,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 }
 
                 byte[] responseData = new byte[2];
-                byte[] result = desfireEv3.readFromATransactionMacFile(fileIdByte);
-                responseData = desfireEv3.getErrorCode();
+                byte[] result = desfireLight.readFromATransactionMacFile(fileIdByte);
+                responseData = desfireLight.getErrorCode();
                 if (result == null) {
                     // something gone wrong
                     writeToUiAppend(output, logString + " fileNumber " + fileIdByte + " FAILURE with error " + EV3.getErrorCode(responseData));
@@ -1636,7 +1647,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with a READ ACCESS KEY ?");
                     }
                     writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-                    writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+                    writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
                     return;
                 } else {
                     writeToUiAppend(output, logString + " fileNumber: " + fileIdByte + printData(" data", result));
@@ -1945,7 +1956,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
 
                 stepString = "3 change Master Application Key 00 from AES DEFAULT to DES DEFAULT";
                 success = desfireAuthenticateLegacy.changeAesKeyToDes(Constants.MASTER_APPLICATION_KEY_NUMBER, Constants.MASTER_APPLICATION_KEY_NUMBER, Constants.MASTER_APPLICATION_KEY_DES_DEFAULT, Constants.MASTER_APPLICATION_KEY_AES_DEFAULT, "Master App Key");
-                //success = desfireEv3.changeApplicationKeyToDesFull(Constants.MASTER_APPLICATION_KEY_NUMBER, (byte) 0x00, Constants.MASTER_APPLICATION_KEY_DES_DEFAULT, Constants.MASTER_APPLICATION_KEY_AES_DEFAULT);
+                //success = desfireLight.changeApplicationKeyToDesFull(Constants.MASTER_APPLICATION_KEY_NUMBER, (byte) 0x00, Constants.MASTER_APPLICATION_KEY_DES_DEFAULT, Constants.MASTER_APPLICATION_KEY_AES_DEFAULT);
                 writeToUiAppend(output, stepString + " success ? : " + success);
                 if (!success) return;
 
@@ -1960,6 +1971,12 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
      * section for dialogs
      */
 
+    private void showDialogWarningNotDesfireLight() {
+        String desfireLightWarningMessage = "SERIOUS WARNING\n\n" +
+                "The tag you are tapping is NOT a Mifare DESFire Light tag.\n" +
+                "All operations are disabled\n\n";
+        showDialog(MainActivity.this, desfireLightWarningMessage);
+    }
     private void showDialogWarningCommitReaderId() {
         String tmacWarningMessage = "SERIOUS WARNING\n\n" +
                 "This application does contain a Transaction MAC file with ENABLED Commit ReaderId feature.\n" +
@@ -2024,21 +2041,21 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             if ((swAuthenticateEv2First.getVisibility() == View.VISIBLE) && (swAuthenticateEv2First.isChecked())) {
                 // the switch is visible and checked
                 writeToUiAppend(output, methodName + " Using authenticateEv2First instead");
-                success = desfireEv3.authenticateAesEv2First(keyNumber, keyForAuthentication);
+                success = desfireLight.authenticateAesEv2First(keyNumber, keyForAuthentication);
             } else {
                 // the switch is visible but not checked
-                success = desfireEv3.authenticateAesLegacy(keyNumber, keyForAuthentication);
+                success = desfireLight.authenticateAesLegacy(keyNumber, keyForAuthentication);
             }
         }
         if (commMode == (byte) 0x01) {
             // MACed
-            success = desfireEv3.authenticateAesEv2First(keyNumber, keyForAuthentication);
+            success = desfireLight.authenticateAesEv2First(keyNumber, keyForAuthentication);
         }
         if (commMode == (byte) 0x03) {
             // Full enciphered
-            success = desfireEv3.authenticateAesEv2First(keyNumber, keyForAuthentication);
+            success = desfireLight.authenticateAesEv2First(keyNumber, keyForAuthentication);
         }
-        responseData = desfireEv3.getErrorCode();
+        responseData = desfireLight.getErrorCode();
         if (success) {
             Log.d(TAG, methodName + " SUCCESS");
             writeToUiAppend(output, methodName + " SUCCESS");
@@ -2065,8 +2082,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             return false;
         }
 
-        boolean success = desfireEv3.changeApplicationKeyFull(keyNumber, keyVersion, keyNew, keyOld);
-        byte[] responseData = desfireEv3.getErrorCode();
+        boolean success = desfireLight.changeApplicationKeyFull(keyNumber, keyVersion, keyNew, keyOld);
+        byte[] responseData = desfireLight.getErrorCode();
 
         if (success) {
             writeToUiAppend(output, methodName + " keyVersion " + keyVersion + " SUCCESS");
@@ -2079,7 +2096,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 writeToUiAppend(output, "as we received an Authentication Error - did you forget to AUTHENTICATE with a APPLICATION MASTER KEY ?");
             }
             writeToUiAppendBorderColor(errorCode, errorCodeLayout, methodName + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData), COLOR_RED);
-            writeToUiAppend(errorCode, "Error reason: " + desfireEv3.getErrorCodeReason());
+            writeToUiAppend(errorCode, "Error reason: " + desfireLight.getErrorCodeReason());
             return false;
         }
     }
@@ -2267,19 +2284,23 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 }
 
                 desfireAuthenticateLegacy = new DesfireAuthenticateLegacy(isoDep, true); // true means all data is logged
-                desfireEv3 = new DesfireEv3(isoDep);
+                desfireLight = new DesfireLight(isoDep);
 
-                if (desfireEv3 != null) {
+                if (desfireLight != null) {
                     runOnUiThread(() -> {
-                        boolean isDesfireEv1 = desfireEv3.checkForDESFireEv1();
-                        if (isDesfireEv1) {
-                            showDialogWarningDesfireEv1();
-                            writeToUiAppend(output, "The tag you are tapping is a Mifare DESFire EV1 tag that does not support the AuthenticateEV2First command.\n" +
-                                    "All AUTHENTICATE operations to a file with Communication Mode MACed and Full enciphered will FAIL\n" +
-                                    "The operations on Plain files will probably run (not tested)\n\n");
+                        isDesfireLight = desfireLight.checkForDESFireLight();
+                        if (!isDesfireLight) {
+                            showDialogWarningNotDesfireLight();
+                            writeToUiAppend(output, "The tag you are tapping is NOT a Mifare DESFire Light tag.\n" +
+                                    "All tag operations are disabled\n\n");
+                            writeToUiAppendBorderColor(errorCode, errorCodeLayout, "Wrong tag type (not a Mifare DESFire Light tag", COLOR_RED);
+                            // todo disable all operations by making the buttons invisible
+                            return;
                         }
                     });
                 }
+
+                if (!isDesfireLight) return;
 
                 // get tag ID
                 tagIdByte = tag.getId();
@@ -2345,7 +2366,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
      */
 
     private boolean isDesfireEv3Available() {
-        if (desfireEv3 != null) {
+        if (desfireLight != null) {
             return true;
         } else {
             writeToUiAppend(output, "please tap a DESFire tag to the reader, aborted");

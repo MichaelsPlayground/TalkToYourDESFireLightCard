@@ -1,4 +1,4 @@
-package de.androidcrypto.talktoyourdesfirecard;
+package de.androidcrypto.talktoyourdesfirelightcard;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
