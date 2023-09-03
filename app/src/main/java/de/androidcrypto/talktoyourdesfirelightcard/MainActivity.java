@@ -1240,7 +1240,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 String logString = "authenticate EV2 First with DEFAULT AES key number 0x01 = read access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_R_NUMBER, Constants.APPLICATION_KEY_R_AES_DEFAULT);
+                boolean success = authAes(Constants.APPLICATION_KEY_R_NUMBER, Constants.APPLICATION_KEY_R_AES_DEFAULT);
             }
         });
 
@@ -1251,7 +1251,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 String logString = "authenticate EV2 First with CHANGED AES key number 0x01 = read access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_R_NUMBER, Constants.APPLICATION_KEY_R_AES);
+                boolean success = authAes(Constants.APPLICATION_KEY_R_NUMBER, Constants.APPLICATION_KEY_R_AES);
             }
         });
 
@@ -1262,7 +1262,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 String logString = "authenticate EV2 First with DEFAULT AES key number 0x02 = write access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_W_NUMBER, Constants.APPLICATION_KEY_W_AES_DEFAULT);
+                boolean success = authAes(Constants.APPLICATION_KEY_W_NUMBER, Constants.APPLICATION_KEY_W_AES_DEFAULT);
             }
         });
 
@@ -1273,7 +1273,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 String logString = "authenticate EV2 First with CHANGED AES key number 0x02 = write access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_W_NUMBER, Constants.APPLICATION_KEY_W_AES);
+                boolean success = authAes(Constants.APPLICATION_KEY_W_NUMBER, Constants.APPLICATION_KEY_W_AES);
             }
         });
 
@@ -1284,7 +1284,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 String logString = "authenticate EV2 First with DEFAULT AES key number 0x03 = read & write access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_RW_NUMBER, Constants.APPLICATION_KEY_RW_AES_DEFAULT);
+                boolean success = authAes(Constants.APPLICATION_KEY_RW_NUMBER, Constants.APPLICATION_KEY_RW_AES_DEFAULT);
             }
         });
 
@@ -1295,7 +1295,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 String logString = "authenticate EV2 First with CHANGED AES key number 0x03 = read & write access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_RW_NUMBER, Constants.APPLICATION_KEY_RW_AES);
+                boolean success = authAes(Constants.APPLICATION_KEY_RW_NUMBER, Constants.APPLICATION_KEY_RW_AES);
             }
         });
 
@@ -1306,7 +1306,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 String logString = "authenticate EV2 First with DEFAULT AES key number 0x04 = undefined key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_4_NUMBER, Constants.APPLICATION_KEY_4_AES_DEFAULT);
+                boolean success = authAes(Constants.APPLICATION_KEY_4_NUMBER, Constants.APPLICATION_KEY_4_AES_DEFAULT);
             }
         });
 
@@ -1317,7 +1317,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 String logString = "authenticate EV2 First with CHANGED AES key number 0x04 = undefined key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_4_NUMBER, Constants.APPLICATION_KEY_4_AES);
+                boolean success = authAes(Constants.APPLICATION_KEY_4_NUMBER, Constants.APPLICATION_KEY_4_AES);
 
                 /*
                 // this is getting the  key from customKeystore as test
@@ -2088,6 +2088,72 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 // the switch is visible but not checked
                 success = desfireLight.authenticateAesLegacy(keyNumber, keyForAuthentication);
             }
+        }
+        if (commMode == (byte) 0x01) {
+            // MACed
+            success = desfireLight.authenticateAesEv2First(keyNumber, keyForAuthentication);
+        }
+        if (commMode == (byte) 0x03) {
+            // Full enciphered
+            success = desfireLight.authenticateAesEv2First(keyNumber, keyForAuthentication);
+        }
+        responseData = desfireLight.getErrorCode();
+        if (success) {
+            Log.d(TAG, methodName + " SUCCESS");
+            writeToUiAppend(output, methodName + " SUCCESS");
+            writeToUiAppendBorderColor(errorCode, errorCodeLayout, methodName + " SUCCESS", COLOR_GREEN);
+            vibrateShort();
+            return true;
+        } else {
+            writeToUiAppend(output, methodName + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(responseData));
+            writeToUiAppendBorderColor(errorCode, errorCodeLayout, methodName + " FAILURE", COLOR_RED);
+            return false;
+        }
+    }
+
+
+    private boolean authAes(byte keyNumber, byte[] keyForAuthentication) {
+        final String methodName = "authAes";
+        Log.d(TAG, methodName);
+        writeToUiAppend(output, methodName);
+        if (selectedApplicationId == null) {
+            writeToUiAppendBorderColor(errorCode, errorCodeLayout, "you need to select an application first", COLOR_RED);
+            return false;
+        }
+        if (selectedFileSettings == null) {
+            writeToUiAppendBorderColor(errorCode, errorCodeLayout, "you need to select a file first", COLOR_RED);
+            return false;
+        }
+        // sanity checks
+        if ((keyNumber < 0) || keyNumber > 4) {
+            Log.e(TAG, "the keyNumber is not in range 0..4, aborted");
+            return false;
+        }
+        if ((keyForAuthentication == null) || (keyForAuthentication.length != 16)) {
+            Log.e(TAG, "the keyForAuthentication is NULL or not of length 16, aborted");
+            return false;
+        }
+        byte[] responseData = new byte[2];
+        boolean success = false;
+        byte commMode = selectedFileSettings.getCommunicationSettings();
+        Log.d(TAG, "commMode: " + commMode);
+        /*
+        if (commMode == (byte) 0x00) {
+            // Plain
+            // as some tasks like changeFileSettings require an authenticationEv2First a switch is
+            // visible when a plain file was selected. Here we are checking the state of the switch
+            if ((swAuthenticateEv2First.getVisibility() == View.VISIBLE) && (swAuthenticateEv2First.isChecked())) {
+                // the switch is visible and checked
+                writeToUiAppend(output, methodName + " Using authenticateEv2First instead");
+                success = desfireLight.authenticateAesEv2First(keyNumber, keyForAuthentication);
+            } else {
+                // the switch is visible but not checked
+                success = desfireLight.authenticateAesLegacy(keyNumber, keyForAuthentication);
+            }
+        }*/
+        if (commMode == (byte) 0x00) {
+            // Plain
+            success = desfireLight.authenticateAesEv2First(keyNumber, keyForAuthentication);
         }
         if (commMode == (byte) 0x01) {
             // MACed

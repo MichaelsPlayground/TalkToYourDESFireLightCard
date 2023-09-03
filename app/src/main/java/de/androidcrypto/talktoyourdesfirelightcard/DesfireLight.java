@@ -3112,9 +3112,11 @@ public class DesfireLight {
             errorCodeReason = "(offset + length) is > fileSize";
             return null;
         }
-        if (!checkIsDataFileType(fileNumber)) return null;
+        if ((!checkIsDataFileType(fileNumber)) && (!checkIsTransactionMacFileType(fileNumber))) return null;
         // the check on authentication depends on the communication mode in file settings:
         byte commMode = fileSettings.getCommunicationSettings();
+        if (!checkAuthentication()) return null;
+        /*
         if (commMode == (byte) 0x00) {
             // Plain
             if (!authenticateAesLegacySuccess) {
@@ -3127,6 +3129,8 @@ public class DesfireLight {
         } else {
             if (!checkAuthentication()) return null;
         }
+
+         */
         if (!checkIsoDep()) return null; // logFile and errorCode are updated
         boolean isPlainMode = false;
         boolean isMacedMode = false;
@@ -3194,7 +3198,14 @@ public class DesfireLight {
     }
 
     public byte[] readFromATransactionMacFile(byte fileNumber) {
-        byte[] receivedData = readFromADataFileRawFull(fileNumber, 0, 12);
+        //byte[] receivedData = readFromADataFileRawFull(fileNumber, 0, 12);
+        byte[] receivedData = readFromADataFile(fileNumber, 0, 12);
+        if ((receivedData == null) || (receivedData.length < 12)) {
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = "Too short response on readFromATransactionMacFile";
+            return null;
+        }
+
         if (receivedData.length == 12) {
             byte[] tmc = Arrays.copyOfRange(receivedData, 0, 4);
             byte[] tmacEnc = Arrays.copyOfRange(receivedData, 4, 12);
