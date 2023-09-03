@@ -127,19 +127,25 @@
                 android:id="@+id/rbPersonalizeMasterAppKeyToChanged"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="change AES Master Application key to CHANGED" />
+                android:clickable="false"
+                android:text="change AES Master Application key to CHANGED"
+                android:visibility="gone" />
 
             <RadioButton
                 android:id="@+id/rbPersonalizeMasterAppKeyToDefault"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="change AES Master Application key to DEFAULT" />
+                android:clickable="false"
+                android:text="change AES Master Application key to DEFAULT"
+                android:visibility="gone" />
 
             <RadioButton
                 android:id="@+id/rbPersonalizeDesMasterAppKeyToAesDefault"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="change DES Master Application key to AES DEFAULT" />
+                android:clickable="false"
+                android:text="change DES Master Application key to AES DEFAULT"
+                android:visibility="gone" />
 
         </RadioGroup>
 

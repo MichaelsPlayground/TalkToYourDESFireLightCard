@@ -23,17 +23,17 @@ This are the available files on a DESFire Light tag with their default file sett
 
 | F Nr | F Id |     F Type     | Size | RW | CAR |  R  |  W  | Deletable |
 |------|------|:--------------:|:----:|:--:|:---:|:---:|:---:|:---: |
-| 00   | EF00 |    Standard    | 256  | 3 | 0 | 1 | F | no |
-| 01   | EF01 |     Cyclic     | 4*16 | 3 | 0 | 1 | F | no |
+| 00   | EF00 |    Standard    | 256  | 3 | 0 | 1 | 15 | no |
+| 01   | EF01 |     Cyclic     | 4*16 | 3 | 0 | 1 | 2 | no |
 | 03   | -    |     Value      |  -   | 3 | 0 | 1 | 2 | no |
 | 04   | EF04 |    Standard    | 256  | 3 | 0 | 1 | 2 | no |
-| 15   | -    | TransactionMAC |  12  | 3 | 0 | 1 | 2 | yes |
-| 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | E | F | no |
+| 15   | -    | TransactionMAC |  12  | 1 | 0 | 1 | 15 | yes |
+| 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | 14 | 15 | no |
 
 Legend:
 
 | Data | Description                                                                       |
-|------|-----------------------------------------------------------------------------------|
+|-----|-----------------------------------------------------------------------------------|
 | F Nr | File number in decimal encoding                                                   |
 | F Id | ISO File Identifier                                                               |
 | F Type | File type as follows:                                                             |
@@ -47,7 +47,9 @@ Legend:
 | CAR | Change Access Rights key                                                          |
 | R | Read Access Rights key                                                            |
 | W | Write Access Rights key                                                           |
-| Deletable | only the Transaction MAC file can be deleted a created newly |
+| | key number 14 ('Eh') = free access (without any authentication)                   |
+| | key number 15 ('Fh') = never access (no access)                               |
+| Deletable | only the Transaction MAC file can be deleted a created newly                      |
 
 ## The following data are from another project !
 

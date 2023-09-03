@@ -158,16 +158,18 @@ public class PersonalizeActivity extends AppCompatActivity implements NfcAdapter
             return;
         }
 
-        writeToUiAppend("step 3: change the application keys Read & Write Access, Change Access, Read Access and Write Access rights (key numbers 01..04)");
+        writeToUiAppend("step 3: change the application keys Read & Write Access, Read Access and Write Access rights (key numbers 01..04)");
         // all key versions get fixed to 0x01
         byte keyVersion = (byte) 0x01;
-        success = changeApplicationKey(Constants.APPLICATION_KEY_RW_NUMBER, keyVersion, Constants.APPLICATION_KEY_RW_AES, Constants.APPLICATION_KEY_RW_AES_DEFAULT, "key number 01");
+        success = changeApplicationKey(Constants.APPLICATION_KEY_RW_NUMBER, keyVersion, Constants.APPLICATION_KEY_RW_AES, Constants.APPLICATION_KEY_RW_AES_DEFAULT, "key number 03");
         if (!success) return;
-        success = changeApplicationKey(Constants.APPLICATION_KEY_CAR_NUMBER, keyVersion, Constants.APPLICATION_KEY_CAR_AES, Constants.APPLICATION_KEY_CAR_AES_DEFAULT, "key number 02");
+        //success = changeApplicationKey(Constants.APPLICATION_KEY_CAR_NUMBER, keyVersion, Constants.APPLICATION_KEY_CAR_AES, Constants.APPLICATION_KEY_CAR_AES_DEFAULT, "key number 02");
+        //if (!success) return;
+        success = changeApplicationKey(Constants.APPLICATION_KEY_R_NUMBER, keyVersion, Constants.APPLICATION_KEY_R_AES, Constants.APPLICATION_KEY_R_AES_DEFAULT, "key number 01");
         if (!success) return;
-        success = changeApplicationKey(Constants.APPLICATION_KEY_R_NUMBER, keyVersion, Constants.APPLICATION_KEY_R_AES, Constants.APPLICATION_KEY_R_AES_DEFAULT, "key number 03");
+        success = changeApplicationKey(Constants.APPLICATION_KEY_W_NUMBER, keyVersion, Constants.APPLICATION_KEY_W_AES, Constants.APPLICATION_KEY_W_AES_DEFAULT, "key number 02");
         if (!success) return;
-        success = changeApplicationKey(Constants.APPLICATION_KEY_W_NUMBER, keyVersion, Constants.APPLICATION_KEY_W_AES, Constants.APPLICATION_KEY_W_AES_DEFAULT, "key number 04");
+        success = changeApplicationKey(Constants.APPLICATION_KEY_4_NUMBER, keyVersion, Constants.APPLICATION_KEY_4_AES, Constants.APPLICATION_KEY_4_AES_DEFAULT, "key number 04");
         if (!success) return;
 
         writeToUiAppend("step 4: change the Application Master key (key number 00)");
@@ -222,13 +224,15 @@ public class PersonalizeActivity extends AppCompatActivity implements NfcAdapter
         writeToUiAppend("step 3: change the application keys Read & Write Access, Change Access, Read Access and Write Access rights (key numbers 01..04)");
         // all key versions get fixed to 0x02
         byte keyVersion = (byte) 0x02;
-        success = changeApplicationKey(Constants.APPLICATION_KEY_RW_NUMBER, keyVersion, Constants.APPLICATION_KEY_RW_AES_DEFAULT, Constants.APPLICATION_KEY_RW_AES, "key number 01");
+        success = changeApplicationKey(Constants.APPLICATION_KEY_RW_NUMBER, keyVersion, Constants.APPLICATION_KEY_RW_AES_DEFAULT, Constants.APPLICATION_KEY_RW_AES, "key number 03");
         if (!success) return;
-        success = changeApplicationKey(Constants.APPLICATION_KEY_CAR_NUMBER, keyVersion, Constants.APPLICATION_KEY_CAR_AES_DEFAULT, Constants.APPLICATION_KEY_CAR_AES, "key number 02");
+        //success = changeApplicationKey(Constants.APPLICATION_KEY_CAR_NUMBER, keyVersion, Constants.APPLICATION_KEY_CAR_AES_DEFAULT, Constants.APPLICATION_KEY_CAR_AES, "key number 02");
+        //if (!success) return;
+        success = changeApplicationKey(Constants.APPLICATION_KEY_R_NUMBER, keyVersion, Constants.APPLICATION_KEY_R_AES_DEFAULT, Constants.APPLICATION_KEY_R_AES, "key number 01");
         if (!success) return;
-        success = changeApplicationKey(Constants.APPLICATION_KEY_R_NUMBER, keyVersion, Constants.APPLICATION_KEY_R_AES_DEFAULT, Constants.APPLICATION_KEY_R_AES, "key number 03");
+        success = changeApplicationKey(Constants.APPLICATION_KEY_W_NUMBER, keyVersion, Constants.APPLICATION_KEY_W_AES_DEFAULT, Constants.APPLICATION_KEY_W_AES, "key number 02");
         if (!success) return;
-        success = changeApplicationKey(Constants.APPLICATION_KEY_W_NUMBER, keyVersion, Constants.APPLICATION_KEY_W_AES_DEFAULT, Constants.APPLICATION_KEY_W_AES, "key number 04");
+        success = changeApplicationKey(Constants.APPLICATION_KEY_4_NUMBER, keyVersion, Constants.APPLICATION_KEY_4_AES_DEFAULT, Constants.APPLICATION_KEY_4_AES, "key number 04");
         if (!success) return;
 
         writeToUiAppend("step 4: change the Application Master key (key number 00)");
@@ -387,76 +391,6 @@ public class PersonalizeActivity extends AppCompatActivity implements NfcAdapter
  */
         vibrateShort();
     }
-    /*
-    private void rbChangeMasterAppKeyToDefault() {
-        clearOutputFields();
-        String logString = "runChangeMasterAppKeyToDefault";
-        writeToUiAppend(output, logString);*/
-        /**
-         * the method will do these steps to change the Master Application key from DEFAULT DES to CHANGED AES
-         * 1) select the master application ("000000")
-         * 2) authenticate with the CHANGED AES master application key
-         * 3) change the master application key (key number 00)
-         */
-/*
-        boolean success;
-
-        writeToUiAppend("step 1: select the application (\"000000\")");
-        //success = desfireLegacy.selectApplication(Constants.MASTER_APPLICATION_IDENTIFIER);
-        success = desfireEv3.selectApplicationByAid(Constants.MASTER_APPLICATION_IDENTIFIER);
-        errorCode = desfireEv3.getErrorCode();
-        if (success) {
-            writeToUiAppendBorderColor("select the application SUCCESS", COLOR_GREEN);
-        } else {
-            writeToUiAppend("select the application FAILURE, aborted");
-            writeToUiAppendBorderColor("select the application FAILURE with error code: "
-                    + EV3.getErrorCode(errorCode) + " = "
-                    + errorCodeReason + ", aborted", COLOR_RED);
-            return;
-        }
-
-        //writeToUiAppend("step 2: authenticate with the DEFAULT Master Application key (key number 00)");
-        writeToUiAppend("step 2: authenticate with the CHANGED AES Master Application key (key number 00)");
-        //success = desfireLegacy.authenticateD40(Constants.MASTER_APPLICATION_KEY_NUMBER, Constants.MASTER_APPLICATION_KEY_DES_DEFAULT);
-        success = desfireEv3.authenticateAesEv2First(Constants.MASTER_APPLICATION_KEY_NUMBER, Constants.MASTER_APPLICATION_KEY_AES);
-        errorCode = desfireEv3.getErrorCode();
-        if (success) {
-            writeToUiAppendBorderColor("authenticate with the CHANGED AES Master Application key SUCCESS", COLOR_GREEN);
-        } else {
-            writeToUiAppend("authenticate with the CHANGED AES Master Application key FAILURE, aborted");
-            writeToUiAppendBorderColor("authenticate with the CHANGED AES Master Application key FAILURE with error code: "
-                    + EV3.getErrorCode(errorCode) + " = "
-                    + errorCodeReason + ", aborted", COLOR_RED);
-            return;
-        }
-
-        writeToUiAppend("step 3: change the Master Application key (key number 00)");
-        // key version is fixed to 0x00
-        //success = desfireLegacy.changeDesKeyToAes(Constants.MASTER_APPLICATION_KEY_NUMBER, Constants.MASTER_APPLICATION_KEY_NUMBER, Constants.MASTER_APPLICATION_KEY_AES, Constants.MASTER_APPLICATION_KEY_DES_DEFAULT, "key number 00");
-        // key version get fixed to 0x02
-        byte keyVersion = (byte) 0x02;
-        success = changeApplicationKey(Constants.MASTER_APPLICATION_KEY_NUMBER, keyVersion, Constants.MASTER_APPLICATION_KEY_DES_DEFAULT, Constants.MASTER_APPLICATION_KEY_AES, "key number 00");
-        errorCode = desfireEv3.getErrorCode();
-        if (success) {
-            writeToUiAppendBorderColor("change the Master Application key SUCCESS", COLOR_GREEN);
-        } else {
-            writeToUiAppend("change the Master Application key FAILURE, aborted");
-            writeToUiAppendBorderColor("change the Master Application key FAILURE with error code: "
-                    + EV3.getErrorCode(errorCode) + ", aborted", COLOR_RED);
-            return;
-        }
-
- */
-/*
-        writeToUiAppend("step 4: change the Application Master key (key number 00)");
-        //success = changeApplicationKey(Constants.APPLICATION_KEY_MASTER_NUMBER, keyVersion, Constants.APPLICATION_KEY_MASTER_AES, Constants.APPLICATION_KEY_MASTER_AES_DEFAULT, "key number 00");
-        if (!success) return;
-        writeToUiAppend("\nAll keys got changed from DEFAULT to CHANGED");
- */
-        /*
-        vibrateShort();
-    }
-*/
 
         private void runChangeMasterAppKeyDesToAesDefault() {
             clearOutputFields();
@@ -512,7 +446,6 @@ public class PersonalizeActivity extends AppCompatActivity implements NfcAdapter
             }
             vibrateShort();
         }
-
 
 
     /**

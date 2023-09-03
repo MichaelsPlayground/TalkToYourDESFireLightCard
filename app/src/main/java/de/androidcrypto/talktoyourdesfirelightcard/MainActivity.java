@@ -308,6 +308,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 }
                 selectedApplicationId = DesfireLight.APPLICATION_DF_NAME_DEFAULT.clone();
                 applicationSelected.setText(Utils.bytesToHexNpe(selectedApplicationId));
+                writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " SUCCESS", COLOR_GREEN);
 /*
 
                 //List<byte[]> fileIdList = desfireLight.getFileIdsIsoList();
@@ -1235,10 +1236,10 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             @Override
             public void onClick(View view) {
                 clearOutputFields();
-                String logString = "authenticate EV2 First with DEFAULT AES key number 0x01 = read & write access key";
+                String logString = "authenticate EV2 First with DEFAULT AES key number 0x01 = read access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_RW_NUMBER, Constants.APPLICATION_KEY_RW_AES_DEFAULT);
+                boolean success = authAesEv3(Constants.APPLICATION_KEY_R_NUMBER, Constants.APPLICATION_KEY_R_AES_DEFAULT);
             }
         });
 
@@ -1246,10 +1247,10 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             @Override
             public void onClick(View view) {
                 clearOutputFields();
-                String logString = "authenticate EV2 First with CHANGED AES key number 0x01 = read & write access key";
+                String logString = "authenticate EV2 First with CHANGED AES key number 0x01 = read access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_RW_NUMBER, Constants.APPLICATION_KEY_RW_AES);
+                boolean success = authAesEv3(Constants.APPLICATION_KEY_R_NUMBER, Constants.APPLICATION_KEY_R_AES);
             }
         });
 
@@ -1257,10 +1258,10 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             @Override
             public void onClick(View view) {
                 clearOutputFields();
-                String logString = "authenticate EV2 First with DEFAULT AES key number 0x02 = change rights access key";
+                String logString = "authenticate EV2 First with DEFAULT AES key number 0x02 = write access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_CAR_NUMBER, Constants.APPLICATION_KEY_CAR_AES_DEFAULT);
+                boolean success = authAesEv3(Constants.APPLICATION_KEY_W_NUMBER, Constants.APPLICATION_KEY_W_AES_DEFAULT);
             }
         });
 
@@ -1268,10 +1269,10 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             @Override
             public void onClick(View view) {
                 clearOutputFields();
-                String logString = "authenticate EV2 First with CHANGED AES key number 0x02 = change rights access key";
+                String logString = "authenticate EV2 First with CHANGED AES key number 0x02 = write access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_CAR_NUMBER, Constants.APPLICATION_KEY_CAR_AES);
+                boolean success = authAesEv3(Constants.APPLICATION_KEY_W_NUMBER, Constants.APPLICATION_KEY_W_AES);
             }
         });
 
@@ -1279,10 +1280,10 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             @Override
             public void onClick(View view) {
                 clearOutputFields();
-                String logString = "authenticate EV2 First with DEFAULT AES key number 0x03 = read access key";
+                String logString = "authenticate EV2 First with DEFAULT AES key number 0x03 = read & write access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_R_NUMBER, Constants.APPLICATION_KEY_R_AES_DEFAULT);
+                boolean success = authAesEv3(Constants.APPLICATION_KEY_RW_NUMBER, Constants.APPLICATION_KEY_RW_AES_DEFAULT);
             }
         });
 
@@ -1290,10 +1291,10 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             @Override
             public void onClick(View view) {
                 clearOutputFields();
-                String logString = "authenticate EV2 First with CHANGED AES key number 0x03 = read access key";
+                String logString = "authenticate EV2 First with CHANGED AES key number 0x03 = read & write access key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_R_NUMBER, Constants.APPLICATION_KEY_R_AES);
+                boolean success = authAesEv3(Constants.APPLICATION_KEY_RW_NUMBER, Constants.APPLICATION_KEY_RW_AES);
             }
         });
 
@@ -1301,10 +1302,10 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             @Override
             public void onClick(View view) {
                 clearOutputFields();
-                String logString = "authenticate EV2 First with DEFAULT AES key number 0x04 = write access key";
+                String logString = "authenticate EV2 First with DEFAULT AES key number 0x04 = undefined key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_W_NUMBER, Constants.APPLICATION_KEY_W_AES_DEFAULT);
+                boolean success = authAesEv3(Constants.APPLICATION_KEY_4_NUMBER, Constants.APPLICATION_KEY_4_AES_DEFAULT);
             }
         });
 
@@ -1312,10 +1313,10 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
             @Override
             public void onClick(View view) {
                 clearOutputFields();
-                String logString = "authenticate EV2 First with CHANGED AES key number 0x04 = write access key";
+                String logString = "authenticate EV2 First with CHANGED AES key number 0x04 = undefined key";
                 writeToUiAppend(output, logString);
                 // the method runs all outputs
-                boolean success = authAesEv3(Constants.APPLICATION_KEY_W_NUMBER, Constants.APPLICATION_KEY_W_AES);
+                boolean success = authAesEv3(Constants.APPLICATION_KEY_4_NUMBER, Constants.APPLICATION_KEY_4_AES);
 
                 /*
                 // this is getting the  key from customKeystore as test
@@ -1505,7 +1506,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 String logString = "create a TransactionMAC file Disabled Commit ReaderId";
                 writeToUiAppend(output, logString);
 
-                byte fileIdByte = DesfireEv3.TRANSACTION_MAC_FILE_NUMBER;
+                byte fileIdByte = DesfireLight.TRANSACTION_MAC_FILE_NUMBER;
                 writeToUiAppend(output, "using a pre defined fileNumber: " + fileIdByte);
                 writeToUiAppend(output, printData("using a predefined TMAC key", TRANSACTION_MAC_KEY_AES));
                 writeToUiAppend(output, "Note: you need to authenticate with the Application Master Key and EV2-type first !");
@@ -1543,7 +1544,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 String logString = "create a TransactionMAC file Enabled Commit ReaderId";
                 writeToUiAppend(output, logString);
 
-                byte fileIdByte = DesfireEv3.TRANSACTION_MAC_FILE_NUMBER;
+                byte fileIdByte = DesfireLight.TRANSACTION_MAC_FILE_NUMBER;
                 writeToUiAppend(output, "using a pre defined fileNumber: " + fileIdByte);
                 writeToUiAppend(output, printData("using a predefined TMAC key", TRANSACTION_MAC_KEY_AES));
                 writeToUiAppend(output, "Note: you need to authenticate with the Application Master Key and EV2-type first !");
@@ -1580,12 +1581,13 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 clearOutputFields();
                 String logString = "delete a TransactionMAC file";
                 writeToUiAppend(output, logString);
-                byte fileIdByte = DesfireEv3.TRANSACTION_MAC_FILE_NUMBER;
+                byte fileIdByte = DesfireLight.TRANSACTION_MAC_FILE_NUMBER;
                 writeToUiAppend(output, "using a pre defined fileNumber: " + fileIdByte);
                 writeToUiAppend(output, printData("using a predefined TMAC key", TRANSACTION_MAC_KEY_AES));
                 writeToUiAppend(output, "Note: DO NOT authenticate with the Application Master Key first !");
 
                 byte[] responseData = new byte[2];
+                // todo implement the TransactionMAC file deletion as Full authentication is needed
                 boolean success = desfireLight.deleteFile(fileIdByte);
                 responseData = desfireLight.getErrorCode();
 

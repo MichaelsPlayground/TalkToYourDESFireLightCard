@@ -186,7 +186,7 @@ public class DesfireLight {
     // section for Transaction MAC files
     private final byte CREATE_TRANSACTION_MAC_FILE_COMMAND = (byte) 0xCE;
     private final byte DELETE_TRANSACTION_MAC_FILE_COMMAND = (byte) 0xDF;
-    public static final byte TRANSACTION_MAC_FILE_NUMBER = (byte) 0x1F; // 31
+    public static final byte TRANSACTION_MAC_FILE_NUMBER = (byte) 0x0F; // 15
     // key settings for Transaction MAC file
     //private final byte ACCESS_RIGHTS_RW_CAR_TMAC = (byte) 0x10; // Read&Write Access (key 01) & ChangeAccessRights (key 00)
     private final byte ACCESS_RIGHTS_RW_CAR_TMAC = (byte) 0xF0; // CommitReaderID disabled & ChangeAccessRights (key 00)
@@ -3194,7 +3194,7 @@ public class DesfireLight {
     }
 
     public byte[] readFromATransactionMacFile(byte fileNumber) {
-        byte[] receivedData = readFromADataFileRawPlain(fileNumber, 0, 12);
+        byte[] receivedData = readFromADataFileRawFull(fileNumber, 0, 12);
         if (receivedData.length == 12) {
             byte[] tmc = Arrays.copyOfRange(receivedData, 0, 4);
             byte[] tmacEnc = Arrays.copyOfRange(receivedData, 4, 12);
@@ -3556,7 +3556,8 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
             errorCodeReason = "(offset + length) is > fileSize";
             return null;
         }
-        if (!checkIsDataFileType(fileNumber)) return null;
+        // todo if (!checkIsDataFileType(fileNumber)) return null; for tmac file as well
+        //if (!checkIsDataFileType(fileNumber)) return null;
         if (!checkIsoDep()) return null; // logFile and errorCode are updated
 
         // command header
@@ -6852,8 +6853,15 @@ Executing Cmd.SetConfiguration in CommMode.Full and Option 0x09 for updating the
         log(methodName, "started", true);
         errorCode = new byte[2];
         // sanity checks
-        if (!checkApplicationIdentifier(selectedApplicationId))
+        //if (!checkApplicationIdentifier(selectedApplicationId)) return false; // logFile and errorCode are updated
+        // todo check on isApplicationSelected
+        if (!isApplicationSelected) {
+            Log.e(TAG, methodName + " select an application first, aborted");
+            log(methodName, "select an application first, aborted");
+            errorCode = RESPONSE_FAILURE.clone();
+            errorCodeReason = "select an application first";
             return false; // logFile and errorCode are updated
+        }
         if (checkAuthentication()) {
             // as the command won't run in authenticated state the  method denies to work further
             Log.e(TAG, methodName + " cannot run this command after authentication, aborted");

@@ -62,18 +62,23 @@ public class Constants {
     public static final byte[] APPLICATION_KEY_MASTER_AES = Utils.hexStringToByteArray("A0000000000000000000000000000000");
     public static final byte APPLICATION_KEY_MASTER_NUMBER = (byte) 0x00;
     public static final byte[] APPLICATION_KEY_RW_AES_DEFAULT = Utils.hexStringToByteArray("00000000000000000000000000000000");
-    public static final byte[] APPLICATION_KEY_RW_AES = Utils.hexStringToByteArray("A1000000000000000000000000000000");
-    public static final byte APPLICATION_KEY_RW_NUMBER = (byte) 0x01;
+    public static final byte[] APPLICATION_KEY_RW_AES = Utils.hexStringToByteArray("A3000000000000000000000000000000");
+    public static final byte APPLICATION_KEY_RW_NUMBER = (byte) 0x03;
     public static final byte[] APPLICATION_KEY_CAR_AES_DEFAULT = Utils.hexStringToByteArray("00000000000000000000000000000000");
-    public static final byte[] APPLICATION_KEY_CAR_AES = Utils.hexStringToByteArray("A2000000000000000000000000000000");
-    public static final byte APPLICATION_KEY_CAR_NUMBER = (byte) 0x02;
+    public static final byte[] APPLICATION_KEY_CAR_AES = Utils.hexStringToByteArray("A0000000000000000000000000000000");
+    public static final byte APPLICATION_KEY_CAR_NUMBER = (byte) 0x00;
     public static final byte[] APPLICATION_KEY_R_AES_DEFAULT = Utils.hexStringToByteArray("00000000000000000000000000000000");
-    public static final byte[] APPLICATION_KEY_R_AES = Utils.hexStringToByteArray("A3000000000000000000000000000000");
-    public static final byte APPLICATION_KEY_R_NUMBER = (byte) 0x03;
+    public static final byte[] APPLICATION_KEY_R_AES = Utils.hexStringToByteArray("A1000000000000000000000000000000");
+    public static final byte APPLICATION_KEY_R_NUMBER = (byte) 0x01;
     public static final byte[] APPLICATION_KEY_W_AES_DEFAULT = Utils.hexStringToByteArray("00000000000000000000000000000000");
-    public static final byte[] APPLICATION_KEY_W_AES = Utils.hexStringToByteArray("A4000000000000000000000000000000");
+    public static final byte[] APPLICATION_KEY_W_AES = Utils.hexStringToByteArray("A2000000000000000000000000000000");
 
-    public static final byte APPLICATION_KEY_W_NUMBER = (byte) 0x04;
+    public static final byte APPLICATION_KEY_W_NUMBER = (byte) 0x02;
+    public static final byte[] APPLICATION_KEY_4_AES_DEFAULT = Utils.hexStringToByteArray("00000000000000000000000000000000");
+    public static final byte[] APPLICATION_KEY_4_AES = Utils.hexStringToByteArray("A4000000000000000000000000000000");
+
+    public static final byte APPLICATION_KEY_4_NUMBER = (byte) 0x04;
+
     public static final int APPLICATION_NUMBER_OF_KEYS_DEFAULT = 5; // master, rw, car, r, w
 
     /**
