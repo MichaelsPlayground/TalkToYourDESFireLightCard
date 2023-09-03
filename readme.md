@@ -4,11 +4,14 @@ This is a sample app to demonstrate how to work with a Mifare DESFire Light card
 
 File settings
 
-| Tables        | Are           | Cool  |
-| ------------- |:-------------:| -----:|
-| col 3 is      | right-aligned | $1600 |
-| col 2 is      | centered      |   $12 |
-| zebra stripes | are neat      |    $1 |
+| F Nr | F Id |     F Type     | Size | RW | CAR |  R  |  W  |
+|------|------|:--------------:|:----:|:---:|:---:|:---:|:---:|
+| 00   | EF00 |    Standard    | 256  | 3 | 0 | 1 |  F  |
+| 01   | EF01 |     Cyclic     | 4*16 |
+| 03   | -    |     Value      |  -   |  
+| 04   | EF04 |    Standard    | 256  | 
+| 15   | -    | TransactionMAC |  12  | 
+| 31   | EF1F |  FCI/Standard  |  32  | 
 
 
 ## The following data are from another project !
