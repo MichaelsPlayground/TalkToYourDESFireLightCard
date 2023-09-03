@@ -1,35 +1,53 @@
 # Talk to your Mifare DESFire Light card
 
-This is a sample app to demonstrate how to work with a Mifare DESFire Light card. 
+This is a sample app to demonstrate how to work with a Mifare DESFire Light tag. This tag is part of 
+the Mifare DESFire family and the commands are equals to a DESFire EV2 tag, but not all commands are 
+available due to the predefined application and files.
 
-Default file settings:
+This is the introduction from the tag's datasheet:
 
-| F Nr | F Id |     F Type     | Size | RW | CAR |  R  |  W  |
-|------|------|:--------------:|:----:|:--:|:---:|:---:|:---:|
-| 00   | EF00 |    Standard    | 256  | 3 | 0 | 1 | F |
-| 01   | EF01 |     Cyclic     | 4*16 | 3 | 0 | 1 | F |
-| 03   | -    |     Value      |  -   | 3 | 0 | 1 | 2 |
-| 04   | EF04 |    Standard    | 256  | 3 | 0 | 1 | 2 |
-| 15   | -    | TransactionMAC |  12  | 3 | 0 | 1 | 2 |
-| 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | E | F |
+*MIFARE DESFire Light has a file-based memory structure compliant to ISO/IEC 7816-4 with a fixed, 
+**pre-defined configuration** of **six individual files** (EF). The pre-defined configuration enables various 
+use cases and allows the management of data according to best practice. Organized in one single 
+directory (DF) and configurable access rights per file it enables different use cases of one issuing 
+instance. MIFARE DESFire Light offers **three individual standard data files** with totally 544 bytes of 
+memory for storage of application-specific data. The **value file** with a stored signed integer value 
+and an upper and lower limit enables fast, flexible and secure implementation of monetary transactions, 
+e.g. for micropayment applications. The **cyclic record file** with 4 entries of 16 bytes each enables an 
+on-card logging of transactions.*
+
+
+## Pre-defined files on a DESFire Light tag
+
+This are the available files on a DESFire Light tag with their default file settings:
+
+| F Nr | F Id |     F Type     | Size | RW | CAR |  R  |  W  | Deletable |
+|------|------|:--------------:|:----:|:--:|:---:|:---:|:---:|:---: |
+| 00   | EF00 |    Standard    | 256  | 3 | 0 | 1 | F | no |
+| 01   | EF01 |     Cyclic     | 4*16 | 3 | 0 | 1 | F | no |
+| 03   | -    |     Value      |  -   | 3 | 0 | 1 | 2 | no |
+| 04   | EF04 |    Standard    | 256  | 3 | 0 | 1 | 2 | no |
+| 15   | -    | TransactionMAC |  12  | 3 | 0 | 1 | 2 | yes |
+| 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | E | F | no |
 
 Legend:
 
-| Data | Description                                                                        |
-|------|------------------------------------------------------------------------------------|
-| F Nr | File number in decimal encoding                                                    |
-| F Id | ISO File Identifier                                                                |
-| F Type | File type as follows:                                                              |
-| | Standard = Standard Data file                                                      |
-| | Cyclic = Cyclic Record file                                                        |
-| | Value = Value file                                                                 |
-| | Transaction = Transaction MAC file                                                 |
-| | FCI/Standard = File Control Information or Standard file                           |
-| Size | File size (Standard file) or number of records * record size (Cyclic Record file)  |
-| RW | Read & Write Access Rights key                                                     |
-| CAR | Change Access Rights key                                                           |
-| R | Read Access Rights key                                                             |
-| W | Write Access Rights key                                                            |
+| Data | Description                                                                       |
+|------|-----------------------------------------------------------------------------------|
+| F Nr | File number in decimal encoding                                                   |
+| F Id | ISO File Identifier                                                               |
+| F Type | File type as follows:                                                             |
+| | Standard = Standard Data file                                                     |
+| | Cyclic = Cyclic Record file                                                       |
+| | Value = Value file                                                                |
+| | Transaction = Transaction MAC file                                                |
+| | FCI/Standard = File Control Information or Standard Data file                     |
+| Size | File size (Standard file) or number of records * record size (Cyclic Record file) |
+| RW | Read & Write Access Rights key                                                    |
+| CAR | Change Access Rights key                                                          |
+| R | Read Access Rights key                                                            |
+| W | Write Access Rights key                                                           |
+| Deletable | only the Transaction MAC file can be deleted a created newly |
 
 ## The following data are from another project !
 
