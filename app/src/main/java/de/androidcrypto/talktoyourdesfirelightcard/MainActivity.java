@@ -446,7 +446,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                         String outputString = fileList[which] + " ";
                         byte fileIdByte = Byte.parseByte(selectedFileId);
 
-                        byte[] isoFileId = Utils.hexStringToByteArray("EF1F"); // fileNumber 31
+                        byte[] isoFileId = Utils.hexStringToByteArray("EF1F"); // fileNumber 31 use for FCI
+                        // see https://cardwerk.com/smart-card-standard-iso7816-4-section-5-basic-organizations/ point 5.1.5 for more information
                         boolean suc = desfireLight.selectFileIsoByFileId(isoFileId);
                         Log.e(TAG, "selectFileIsoByFileId suc: " + suc);
 
