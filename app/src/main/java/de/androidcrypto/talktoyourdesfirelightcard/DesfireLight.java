@@ -2530,7 +2530,7 @@ public class DesfireLight {
         byte[] apdu;
         byte[] response;
         try {
-            apdu = wrapMessage(WRITE_DATA_FILE_COMMAND, commandParameter);
+            apdu = wrapMessage(WRITE_DATA_FILE_SECURE_COMMAND, commandParameter);
             response = sendData(apdu);
         } catch (IOException e) {
             Log.e(TAG, methodName + " transceive failed, IOException:\n" + e.getMessage());
@@ -3339,7 +3339,7 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
         baos.write(offsetBytes, 0, offsetBytes.length);
         baos.write(lengthBytes, 0, lengthBytes.length);
         byte[] commandParameter = baos.toByteArray();
-        byte[] response = sendRequest(READ_DATA_FILE_COMMAND, commandParameter);
+        byte[] response = sendRequest(READ_DATA_FILE_SECURE_COMMAND, commandParameter);
         byte[] responseBytes = returnStatusBytes(response);
         System.arraycopy(responseBytes, 0, errorCode, 0, 2);
         if (!checkResponse(response)) {
