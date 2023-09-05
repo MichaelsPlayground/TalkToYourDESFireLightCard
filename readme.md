@@ -27,7 +27,7 @@ This are the available files on a DESFire Light tag with their default file sett
 | 01   | EF01 | Cyclic Record  | 4*16 | 3 | 0 | 1 | 2 | no | Full | |
 | 03   | -    |     Value      |  -   | 3 | 0 | 1 | 2 | no | Full | *1) |
 | 04   | EF04 |    Standard    | 256  | 3 | 0 | 1 | 2 | no | Full | |
-| 15   | -    | TransactionMAC |  12  | 1 | 0 | 1 | 15 | yes | Full | |
+| 15   | -    | TransactionMAC |  12  | 1 | 0 | 1 | 15 | yes | Full | *2) |
 | 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | 14 | 15 | no | Plain | |
 
 Legend:
@@ -50,9 +50,9 @@ Legend:
 | | key number 14 ('Eh') = free access (without any authentication)  |
 | | key number 15 ('Fh') = never access (no access) |
 | Deletable | only the Transaction MAC file can be deleted and created newly  |
- | Comm.Mode | Communication mode, can be Plain, MACed or Full enciphered |
- | Notes | *1) a Limited Credit value of 111 is defined and a free access on read value is granted |  
-
+| Comm.Mode | Communication mode, can be Plain, MACed or Full enciphered |
+| Notes | *1) a Limited Credit value of 111 is defined and a free access on read value is granted |  
+|       | *2) the TransactionMAC file is created with **enabled** CommitReaderId feature 
 
 
 

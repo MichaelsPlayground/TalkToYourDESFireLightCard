@@ -5790,7 +5790,7 @@ padding add up to 16 bytes. As the data is always a multiple of 16 bytes, no pad
 
         // here we are using just the commit command without preceding commitReaderId command
         // Constructing the full CommitTransaction Command APDU
-        final byte COMMIT_TRANSACTION_OPTION_DISABLED = (byte) 0x00; // 01 meaning TMC and TMV to be returned in the R-APDU
+        final byte COMMIT_TRANSACTION_OPTION_DISABLED = (byte) 0x00; // 00 meaning TMC and TMV NOT to be returned in the R-APDU
         final byte COMMIT_TRANSACTION_OPTION_ENABLED = (byte) 0x01; // 01 meaning TMC and TMV to be returned in the R-APDU
         byte commitTransactionOptionEnabledReturnTmcv;
         if (isEnabledReturnTmcv) {
