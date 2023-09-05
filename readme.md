@@ -28,7 +28,7 @@ This are the available files on a DESFire Light tag with their default file sett
 | 03   | -    |     Value      |  -   | 3 | 0 | 1 | 2 | no | Full | *1) |
 | 04   | EF04 |    Standard    | 256  | 3 | 0 | 1 | 2 | no | Full | |
 | 15   | -    | TransactionMAC |  12  | 1 | 0 | 1 | 15 | yes | Full | *2) |
-| 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | 14 | 15 | no | Plain | |
+| 31   | EF1F |  FCI/Standard  |  32  | 3 | 0 | 14 | 15 | no | Plain | *3) |
 
 Legend:
 
@@ -52,7 +52,8 @@ Legend:
 | Deletable | only the Transaction MAC file can be deleted and created newly  |
 | Comm.Mode | Communication mode, can be Plain, MACed or Full enciphered |
 | Notes | *1) a Limited Credit value of 111 is defined and a free access on read value is granted |  
-|       | *2) the TransactionMAC file is created with **enabled** CommitReaderId feature 
+|       | *2) the TransactionMAC file is created with **enabled** CommitReaderId feature |
+|       | *3) this Standard file is the storage place for a **File Control Information (FCI)** template |
 
 
 
