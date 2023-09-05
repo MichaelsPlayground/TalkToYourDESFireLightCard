@@ -270,6 +270,7 @@ public class DesfireLight {
     private static byte[] APPLICATION_ALL_FILE_IDS; // filled by getAllFileIds and invalidated by selectApplication AND createFile
     private static byte[] APPLICATION_ALL_FILE_IDS_ISO; // filled by getAllFileIdsIso
     private static FileSettings[] APPLICATION_ALL_FILE_SETTINGS; // filled by getAllFileSettings and invalidated by selectApplication AND createFile
+    private byte[] FILE_CONTROL_INFORMATION; // filled by selectApplicationByIsoDfName, data is content from Standard File number 31 (1Fh)
     private FileSettings selectedFileSetting; // takes the fileSettings of the actual file
     private FileSettings[] fileSettingsArray = new FileSettings[MAXIMUM_NUMBER_OF_FILES]; // after an 'select application' the fileSettings of all files are read
     private boolean isTransactionMacFilePresent = false; // true when a Transaction MAC file is present in an application
@@ -636,7 +637,7 @@ public class DesfireLight {
 
     public boolean selectApplicationIsoByDfName(byte[] dfApplicationName) {
         String logData = "";
-        final String methodName = "selectApplicationByIsoByDfName";
+        final String methodName = "selectApplicationIsoByDfName";
         log(methodName, "started", true);
         log(methodName, printData("dfApplicationName", dfApplicationName));
 
@@ -655,8 +656,8 @@ public class DesfireLight {
         baos.write((byte) 0x00);
         baos.write(SELECT_APPLICATION_ISO_COMMAND);
         baos.write((byte) 0x04); // select by DF name
-        baos.write((byte) 0x0C); // return no FCI data
-        //baos.write((byte) 0x00); // return the content of FCI = file id 1F
+        //baos.write((byte) 0x0C); // return no FCI data
+        baos.write((byte) 0x00); // return the content of FCI = file id 1F
         baos.write(dfApplicationName.length);
         baos.write(dfApplicationName, 0, dfApplicationName.length);
         baos.write((byte) 0x00); // le
@@ -667,11 +668,13 @@ public class DesfireLight {
             errorCode = RESPONSE_OK.clone();
             errorCodeReason = methodName + " SUCCESS";
             isApplicationSelected = true;
+            FILE_CONTROL_INFORMATION = getData(response);
             return true;
         } else {
             log(methodName, methodName + " FAILURE");
             errorCode = RESPONSE_FAILURE.clone();
             errorCodeReason = methodName + " FAILURE";
+            FILE_CONTROL_INFORMATION = null;
             return false;
         }
     }
@@ -10252,6 +10255,10 @@ fileSize: 128
 
     public static FileSettings[] getApplicationAllFileSettings() {
         return APPLICATION_ALL_FILE_SETTINGS;
+    }
+
+    public byte[] getFILE_CONTROL_INFORMATION() {
+        return FILE_CONTROL_INFORMATION;
     }
 
     public boolean isTransactionMacFilePresent() {

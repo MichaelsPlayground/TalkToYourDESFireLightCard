@@ -310,75 +310,11 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Reader
                 applicationSelected.setText(Utils.bytesToHexNpe(selectedApplicationId));
                 writeToUiAppend(output, "selected application DF Name: " + Utils.bytesToHexNpe(selectedApplicationId));
                 writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " SUCCESS", COLOR_GREEN);
-/*
-
-                //List<byte[]> fileIdList = desfireLight.getFileIdsIsoList();
-                List<byte[]> fileIdList = desfireLight.getAFileIdsList();
-                //List<byte[]> applicationIdList = desfireLight.getApplicationIdsList();
-                errorCodeDf = desfireLight.getErrorCode();
-                errorCodeReason = desfireLight.getErrorCodeReason();
-                if ((fileIdList == null) || (fileIdList.size() == 0)) {
-                    writeToUiAppend(output, "there are no file IDs on the  PICC");
-                    writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE with error code: " + Utils.bytesToHexNpeUpperCase(errorCodeDf), COLOR_RED);
-                    return;
+                byte[] fci = desfireLight.getFILE_CONTROL_INFORMATION();
+                if ((fci != null) && (fci.length > 2)) {
+                    writeToUiAppend(output, printData("file control information", fci));
+                    writeToUiAppend(output, "fci:" + new String(fci, StandardCharsets.UTF_8));
                 }
-
-                String[] fileList = new String[fileIdList.size()];
-                for (int i = 0; i < fileIdList.size(); i++) {
-                    byte[] fid = fileIdList.get(i);
-                    //Utils.reverseByteArrayInPlace(aid);
-                    fileList[i] = Utils.bytesToHexNpeUpperCase(fid);
-                }
-
-                // setup the alert builder
-                AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
-                builder.setTitle("Choose an application");
-
-                builder.setItems(fileList, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        writeToUiAppend(output, "you  selected nr " + which + " = " + fileList[which]);
-                        selectedApplicationId = Utils.hexStringToByteArray(fileList[which]);
-                        // now we run the command to select the application
-                        byte[] responseData = new byte[2];
-                        byte[] aid = selectedApplicationId.clone();
-                        //Utils.reverseByteArrayInPlace(aid);
-                        boolean result = desfireLight.selectApplicationByAid(aid);
-                        responseData = desfireLight.getErrorCode();
-                        writeToUiAppend(output, "result of selectApplication: " + result);
-                        int colorFromErrorCode = EV3.getColorFromErrorCode(responseData);
-                        writeToUiAppendBorderColor(errorCode, errorCodeLayout, "selectApplication: " + EV3.getErrorCode(responseData), colorFromErrorCode);
-                        applicationSelected.setText(fileList[which]);
-                        selectedApplicationId = Utils.hexStringToByteArray(fileList[which]);
-
-                        // try to read all fileIds and fileSettings within this application
-                        Log.d(TAG, "getAllFileIds and allFileSettings");
-                        allFileIds = desfireLight.getAllFileIds();
-                        allFileSettings = desfireLight.getAllFileSettings();
-                        byte[] responseCode = desfireLight.getErrorCode();
-                        if ((allFileIds == null) || (allFileIds.length == 0)) {
-                            writeToUiAppend(output, "no file IDs found, aborted");
-                            writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE", COLOR_RED);
-                            return;
-                        }
-                        if ((allFileSettings == null) || (allFileSettings.length == 0)) {
-                            writeToUiAppend(output, "no file settings found, aborted");
-                            writeToUiAppendBorderColor(errorCode, errorCodeLayout, logString + " FAILURE", COLOR_RED);
-                            return;
-                        }
-                        isFileListRead = true;
-                        isTransactionMacFilePresent = desfireLight.isTransactionMacFilePresent();
-                        isCommitReaderIdEnabled = desfireLight.isTransactionMacCommitReaderId();
-
-                        // for some actions we do need active authentication and key changing
-                        llSectionAuthentication.setVisibility(View.VISIBLE);
-                        llSectionChangeKey.setVisibility((View.VISIBLE));
-                    }
-                });
-                // create and show the alert dialog
-                AlertDialog dialog = builder.create();
-                dialog.show();
-                */
             }
          });
 
